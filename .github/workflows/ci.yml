@@ -25,9 +25,15 @@ jobs:
           --health-timeout 5s
           --health-retries 10
     env:
-      DATABASE_URL: postgres://coinfidant:coinfidant_ci@localhost:5432/coinfidant
+      MIGRATION_DATABASE_URL: postgres://coinfidant:coinfidant_ci@localhost:5432/coinfidant
+      DATABASE_URL: postgres://coinfidant_app:coinfidant_app_ci@localhost:5432/coinfidant
+      APP_DB_PASSWORD: coinfidant_app_ci
       WEB_ORIGIN: http://localhost:5173
       NODE_ENV: test
+      JWT_SECRET: ci-only-secret-not-used-anywhere-else-0123456789
+      GOOGLE_CLIENT_ID: ci
+      GOOGLE_CLIENT_SECRET: ci
+      GOOGLE_CALLBACK_URL: http://localhost:5173/api/auth/google/callback
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -35,6 +41,8 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      - run: psql "$MIGRATION_DATABASE_URL" -v pw="$APP_DB_PASSWORD" -f scripts/create-app-role.sql
+        working-directory: apps/api
       - run: npx tsx src/db/migrate.ts
         working-directory: apps/api
       - run: npm run format:check

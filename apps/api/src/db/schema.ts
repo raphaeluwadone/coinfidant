@@ -1,26 +1,68 @@
-import { bigint, check, date, index, pgTable, smallint, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
+import {
+  bigint,
+  check,
+  date,
+  index,
+  pgPolicy,
+  pgRole,
+  pgTable,
+  smallint,
+  text,
+  timestamp,
+  unique,
+  uuid,
+} from "drizzle-orm/pg-core";
+
+/** Login role the API connects as. It owns nothing and can't bypass row-level security. */
+export const appRole = pgRole("coinfidant_app").existing();
+
+const ownRows = (table: string) =>
+  pgPolicy(`${table}_owner`, {
+    for: "all",
+    to: appRole,
+    using: sql`user_id = nullif(current_setting('app.user_id', true), '')::uuid`,
+    withCheck: sql`user_id = nullif(current_setting('app.user_id', true), '')::uuid`,
+  });
+
+const createdAt = () => timestamp("created_at", { withTimezone: true }).notNull().defaultNow();
 
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
   email: text("email").notNull().unique(),
-  passwordHash: text("password_hash").notNull(),
   displayName: text("display_name"),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: createdAt(),
 });
 
-// Only a SHA-256 of the cookie token is stored, so a DB leak can't be replayed as sessions.
-export const sessions = pgTable(
-  "sessions",
+export const authIdentities = pgTable(
+  "auth_identities",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    provider: text("provider").notNull(),
+    providerUserId: text("provider_user_id").notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [unique("auth_identities_provider_uid").on(t.provider, t.providerUserId), index().on(t.userId)],
+);
+
+// Hashes only. A family is one sign-in's chain of rotations; reusing a rotated token revokes the family.
+export const refreshTokens = pgTable(
+  "refresh_tokens",
   {
     tokenHash: text("token_hash").primaryKey(),
+    familyId: uuid("family_id").notNull(),
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    rotatedAt: timestamp("rotated_at", { withTimezone: true }),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    createdAt: createdAt(),
   },
-  (t) => [index("sessions_user_id_idx").on(t.userId)],
+  (t) => [index().on(t.familyId), index().on(t.userId)],
 );
 
 const money = (name: string) => bigint(name, { mode: "number" });
@@ -43,6 +85,7 @@ export const profiles = pgTable(
     check("profiles_salary_positive", sql`${t.salary} > 0`),
     check("profiles_savings_range", sql`${t.savingsPercent} between 0 and 90`),
     check("profiles_payday_range", sql`${t.payday} between 1 and 31`),
+    ownRows("profiles"),
   ],
 );
 
@@ -56,7 +99,11 @@ export const bills = pgTable(
     name: text("name").notNull(),
     amount: money("amount").notNull(),
   },
-  (t) => [index("bills_user_id_idx").on(t.userId), check("bills_amount_positive", sql`${t.amount} > 0`)],
+  (t) => [
+    index("bills_user_id_idx").on(t.userId),
+    check("bills_amount_positive", sql`${t.amount} > 0`),
+    ownRows("bills"),
+  ],
 );
 
 // local_date is fixed at insert from the user's timezone so cycle queries don't shift if they travel.
@@ -76,6 +123,7 @@ export const spends = pgTable(
   (t) => [
     index("spends_user_date_idx").on(t.userId, t.localDate),
     check("spends_amount_positive", sql`${t.amount} > 0`),
+    ownRows("spends"),
   ],
 );
 

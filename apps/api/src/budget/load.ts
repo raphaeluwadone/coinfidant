@@ -1,12 +1,14 @@
 import { computeOpenCycle, cycleStartFor, localDate } from "@coinfidant/engine";
 import { and, asc, between, eq } from "drizzle-orm";
-import { db } from "../db/client";
+import type { Tx } from "../db/db.module";
 import { bills, profiles, spends } from "../db/schema";
 
-export async function loadProfile(userId: string) {
-  const [profile] = await db.select().from(profiles).where(eq(profiles.userId, userId)).limit(1);
+// Queries also filter by user_id: RLS is the safety net, not the only check.
+
+export async function loadProfile(tx: Tx, userId: string) {
+  const [profile] = await tx.select().from(profiles).where(eq(profiles.userId, userId)).limit(1);
   if (!profile) return null;
-  const billRows = await db
+  const billRows = await tx
     .select({ id: bills.id, name: bills.name, amount: bills.amount })
     .from(bills)
     .where(eq(bills.userId, userId))
@@ -14,14 +16,14 @@ export async function loadProfile(userId: string) {
   return { ...profile, bills: billRows };
 }
 
-export async function loadToday(userId: string, now = new Date()) {
-  const profile = await loadProfile(userId);
+export async function loadToday(tx: Tx, userId: string, now = new Date()) {
+  const profile = await loadProfile(tx, userId);
   if (!profile) return null;
 
   const today = localDate(now, profile.timezone);
   // TODO(M3): start from the salary-received record instead of the expected payday.
   const start = cycleStartFor(today, profile.payday);
-  const rows = await db
+  const rows = await tx
     .select({
       id: spends.id,
       amount: spends.amount,

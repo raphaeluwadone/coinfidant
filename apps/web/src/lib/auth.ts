@@ -16,10 +16,7 @@ export const meQuery = queryOptions({
   },
 });
 
-export const login = (email: string, password: string) =>
-  api<{ user: SessionUser }>("/auth/login", { method: "POST", json: { email, password } });
-
-export const signup = (email: string, password: string, displayName?: string) =>
-  api<{ user: SessionUser }>("/auth/signup", { method: "POST", json: { email, password, displayName } });
+/** Full-page navigation: the API redirects to Google and back to the app. */
+export const GOOGLE_SIGN_IN_URL = "/api/auth/google";
 
 export const logout = () => api<void>("/auth/logout", { method: "POST" });
