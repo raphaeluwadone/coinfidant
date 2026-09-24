@@ -1,0 +1,29 @@
+{
+  "name": "@coinfidant/api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --env-file=.env src/index.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx --env-file=.env src/db/migrate.ts",
+    "test": "vitest run",
+    "typecheck": "tsc -p ."
+  },
+  "dependencies": {
+    "@coinfidant/contracts": "*",
+    "@coinfidant/engine": "*",
+    "@hono/node-server": "^2.1.1",
+    "@hono/zod-validator": "^0.9.1",
+    "@node-rs/argon2": "^2.2.1",
+    "drizzle-orm": "^0.45.3",
+    "hono": "^4.13.9",
+    "postgres": "^3.4.9",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "drizzle-kit": "^0.31.11",
+    "tsx": "^4.23.15",
+    "vitest": "^5.0.1"
+  }
+}

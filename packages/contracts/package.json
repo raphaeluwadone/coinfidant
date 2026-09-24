@@ -1,0 +1,15 @@
+{
+  "name": "@coinfidant/contracts",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p ."
+  },
+  "dependencies": {
+    "@coinfidant/engine": "*",
+    "zod": "^4.6.5"
+  }
+}

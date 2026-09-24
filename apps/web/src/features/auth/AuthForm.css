@@ -1,0 +1,50 @@
+.auth {
+  max-width: 400px;
+  margin: 0 auto;
+  padding: 56px 16px 32px;
+  display: grid;
+  gap: 24px;
+  animation: fade-up 0.6s ease both;
+}
+
+.auth__head {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: 8px;
+}
+.auth__head h1 {
+  margin: 8px 0 0;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.auth__head p {
+  margin: 0;
+  color: var(--text-soft);
+  font-weight: 500;
+}
+
+.auth__form {
+  display: grid;
+  gap: 16px;
+}
+
+.auth__error {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--danger);
+}
+
+.auth__switch {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 14px;
+  margin: 0;
+}
+.auth__switch a {
+  color: var(--accent-text);
+  font-weight: 700;
+  text-decoration: none;
+}

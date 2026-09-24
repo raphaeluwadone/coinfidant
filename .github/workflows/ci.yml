@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    services:
+      db:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: coinfidant
+          POSTGRES_PASSWORD: coinfidant_ci
+          POSTGRES_DB: coinfidant
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U coinfidant"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://coinfidant:coinfidant_ci@localhost:5432/coinfidant
+      WEB_ORIGIN: http://localhost:5173
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx tsx src/db/migrate.ts
+        working-directory: apps/api
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build -w @coinfidant/web

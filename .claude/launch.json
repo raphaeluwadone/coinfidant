@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "api",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev:api", "--prefix", "/Users/donatello/Documents/projects/coinfidant"],
+      "port": 8787
+    },
+    {
+      "name": "web",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev:web", "--prefix", "/Users/donatello/Documents/projects/coinfidant"],
+      "port": 5173
+    }
+  ]
+}

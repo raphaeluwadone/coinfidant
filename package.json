@@ -1,0 +1,33 @@
+{
+  "name": "coinfidant",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run db:up && concurrently -n api,web -c magenta,cyan \"npm run dev -w @coinfidant/api\" \"npm run dev -w @coinfidant/web\"",
+    "db:up": "docker compose up -d db",
+    "db:down": "docker compose down",
+    "dev:api": "npm run dev -w @coinfidant/api",
+    "dev:web": "npm run dev -w @coinfidant/web",
+    "test": "npm run test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm test"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "concurrently": "^10.0.5",
+    "eslint": "^10.11.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.12.0",
+    "prettier": "^3.9.9",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.70.1"
+  }
+}

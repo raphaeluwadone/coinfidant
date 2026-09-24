@@ -1,0 +1,152 @@
+.setup {
+  max-width: 440px;
+  margin: 0 auto;
+  padding: 40px 16px 48px;
+  display: grid;
+  gap: 20px;
+  animation: fade-up 0.6s ease both;
+}
+
+.setup__head {
+  display: grid;
+  gap: 8px;
+}
+.setup__head h1 {
+  margin: 8px 0 0;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.setup__head p {
+  margin: 0;
+  color: var(--text-soft);
+  font-weight: 500;
+}
+
+.setup__form,
+.setup__section {
+  display: grid;
+  gap: 16px;
+}
+
+.setup__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.setup__hint {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.setup__preview {
+  display: grid;
+  gap: 4px;
+  background: var(--accent-tint);
+  box-shadow: none;
+}
+.setup__preview.is-warn {
+  background: rgba(248, 113, 113, 0.12);
+  color: var(--danger);
+  font-weight: 600;
+}
+.setup__preview p {
+  margin: 0;
+}
+.setup__big {
+  font-size: 36px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.setup__error {
+  margin: 0;
+  color: var(--danger);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.bill-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 36px;
+  gap: 8px;
+  align-items: center;
+}
+
+.money-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 48px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-2);
+  min-width: 0;
+}
+.money-input:focus-within {
+  border-color: var(--accent);
+}
+.money-input span {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+.money-input input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: none;
+  outline: none;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.text-input,
+.select {
+  height: 48px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-2);
+  outline: none;
+  min-width: 0;
+}
+.text-input:focus,
+.select:focus {
+  border-color: var(--accent);
+}
+
+.icon-btn {
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  color: var(--text-muted);
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.link-btn {
+  justify-self: start;
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--accent-text);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+input[type="range"] {
+  accent-color: var(--accent);
+  width: 100%;
+}
+
+.setup__logout {
+  justify-self: center;
+  color: var(--text-muted);
+}

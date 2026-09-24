@@ -1,0 +1,14 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: coinfidant
+      POSTGRES_PASSWORD: coinfidant_local
+      POSTGRES_DB: coinfidant
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:

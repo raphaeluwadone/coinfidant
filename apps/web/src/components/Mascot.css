@@ -1,0 +1,16 @@
+.mascot {
+  flex-shrink: 0;
+}
+.mascot.is-floating {
+  animation: mascot-float 4s ease-in-out infinite;
+}
+
+@keyframes mascot-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-3deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(4deg);
+  }
+}
