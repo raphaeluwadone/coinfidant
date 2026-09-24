@@ -1,4 +1,4 @@
-import { computeSnapshot, formatMoney, localDate } from "@coinfidant/engine";
+import { computeOpenCycle, cycleStartFor, formatMoney, hasEvent, localDate } from "@coinfidant/engine";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useMemo, useState, type FormEvent } from "react";
@@ -25,10 +25,29 @@ export function SetupForm({ initial }: { initial: Profile | null }) {
   const preview = useMemo(() => {
     if (salary <= 0) return null;
     const today = localDate(new Date(), TZ);
-    return computeSnapshot({ salary, bills: validBills, savingsPercent, payday }, [], today);
+    return computeOpenCycle({
+      today,
+      settings: {
+        savingsPercent,
+        minSavingsPercent: 5,
+        floorPercent: 70,
+        weekStart: 0,
+        expectedPayday: payday,
+        everydayEstimate: null,
+      },
+      cycle: { start: cycleStartFor(today, payday), salary },
+      bills: validBills.map((b, i) => ({ id: String(i), ...b })),
+      sinkingFunds: [],
+      debts: [],
+      commitments: [],
+      transactions: [],
+      sweepChoices: {},
+      debtPayments: [],
+    });
   }, [salary, validBills, savingsPercent, payday]);
 
-  const perWeek = preview ? Math.round((preview.plan.spendable / preview.cycle.days) * 7) : 0;
+  const overcommitted = preview ? hasEvent(preview, "overcommitted") : false;
+  const perWeek = preview ? Math.round((preview.plan.flexible / preview.cycle.days) * 7) : 0;
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -126,18 +145,18 @@ export function SetupForm({ initial }: { initial: Profile | null }) {
             onChange={(e) => setSavings(Number(e.target.value))}
             aria-label="Savings percent"
           />
-          {preview && <p className="setup__hint">That's {formatMoney(preview.plan.savings)} to Future You.</p>}
+          {preview && <p className="setup__hint">That's {formatMoney(preview.plan.savingsPlanned)} to Future You.</p>}
         </section>
 
         {preview && (
-          <section className={`card setup__preview ${preview.warnings.length ? "is-warn" : ""}`}>
-            {preview.warnings.includes("overcommitted") ? (
+          <section className={`card setup__preview ${overcommitted ? "is-warn" : ""}`}>
+            {overcommitted ? (
               <p>Bills and savings are more than your pay. Trim something so there's room to live.</p>
             ) : (
               <>
                 <span className="label">You'll have about</span>
                 <strong className="setup__big">{formatMoney(perWeek)}</strong>
-                <span className="setup__hint">a week to spend, {formatMoney(preview.plan.spendable)} this cycle.</span>
+                <span className="setup__hint">a week to spend, {formatMoney(preview.plan.flexible)} this cycle.</span>
               </>
             )}
           </section>
@@ -148,7 +167,7 @@ export function SetupForm({ initial }: { initial: Profile | null }) {
             {error}
           </p>
         )}
-        <button className="btn" type="submit" disabled={busy || salary <= 0 || !!preview?.warnings.length}>
+        <button className="btn" type="submit" disabled={busy || salary <= 0 || overcommitted}>
           {initial ? "Save plan" : "Start budgeting"}
         </button>
       </form>

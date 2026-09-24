@@ -1,4 +1,4 @@
-import { computeSnapshot, cycleFor, localDate } from "@coinfidant/engine";
+import { computeOpenCycle, cycleStartFor, localDate } from "@coinfidant/engine";
 import { and, asc, between, eq } from "drizzle-orm";
 import { db } from "../db/client";
 import { bills, profiles, spends } from "../db/schema";
@@ -19,7 +19,8 @@ export async function loadToday(userId: string, now = new Date()) {
   if (!profile) return null;
 
   const today = localDate(now, profile.timezone);
-  const cycle = cycleFor(today, profile.payday);
+  // TODO(M3): start from the salary-received record instead of the expected payday.
+  const start = cycleStartFor(today, profile.payday);
   const rows = await db
     .select({
       id: spends.id,
@@ -30,13 +31,27 @@ export async function loadToday(userId: string, now = new Date()) {
       localDate: spends.localDate,
     })
     .from(spends)
-    .where(and(eq(spends.userId, userId), between(spends.localDate, cycle.start, cycle.end)))
+    .where(and(eq(spends.userId, userId), between(spends.localDate, start, today)))
     .orderBy(asc(spends.occurredAt));
 
-  const snapshot = computeSnapshot(
-    { salary: profile.salary, bills: profile.bills, savingsPercent: profile.savingsPercent, payday: profile.payday },
-    rows.map((r) => ({ amount: r.amount, date: r.localDate })),
+  const snapshot = computeOpenCycle({
     today,
-  );
+    settings: {
+      savingsPercent: profile.savingsPercent,
+      minSavingsPercent: 5,
+      floorPercent: 70,
+      weekStart: 0,
+      expectedPayday: profile.payday,
+      everydayEstimate: null,
+    },
+    cycle: { start, salary: profile.salary },
+    bills: profile.bills,
+    sinkingFunds: [],
+    debts: [],
+    commitments: [],
+    transactions: rows.map((r) => ({ id: r.id, amount: r.amount, date: r.localDate, type: "spend" as const })),
+    sweepChoices: {},
+    debtPayments: [],
+  });
   return { profile, snapshot, spends: rows };
 }

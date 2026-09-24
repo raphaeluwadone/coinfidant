@@ -1,4 +1,4 @@
-import type { Snapshot } from "./budget";
+import type { OpenCycle } from "./types";
 
 export type Tone = "gentle" | "cheeky" | "unhinged";
 
@@ -50,8 +50,8 @@ const QUIPS: Record<TodayMood, Record<Tone, string[]>> = {
   },
 };
 
-export function todayMood(s: Snapshot): TodayMood {
-  if (s.warnings.includes("overcommitted")) return "overcommitted";
+export function todayMood(s: OpenCycle): TodayMood {
+  if (s.events.some((e) => e.type === "overcommitted")) return "overcommitted";
   if (s.today.leftThisWeek < 0) return "overWeek";
   if (s.today.spendToday <= 0 && s.today.spentToday > 0) return "spentOut";
   if (s.today.spentToday === 0) return "fresh";
@@ -118,7 +118,7 @@ export function reactionFor(category: string, tone: Tone, overToday: boolean): s
 
 export type PaceStatus = "onTrack" | "slowDown" | "over";
 
-export function paceStatus(s: Snapshot): PaceStatus {
+export function paceStatus(s: OpenCycle): PaceStatus {
   if (s.today.leftThisWeek < 0) return "over";
   return s.today.spendToday < 0 ? "slowDown" : "onTrack";
 }

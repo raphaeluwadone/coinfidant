@@ -1,4 +1,4 @@
-import type { ISODate, Minor, Snapshot } from "@coinfidant/engine";
+import type { ISODate, Minor, OpenCycle } from "@coinfidant/engine";
 import { queryOptions } from "@tanstack/react-query";
 import { api } from "./api";
 import type { Profile } from "./profile";
@@ -12,7 +12,7 @@ export type SpendRow = {
   localDate: ISODate;
 };
 
-export type TodayData = { profile: Profile; snapshot: Snapshot; spends: SpendRow[] };
+export type TodayData = { profile: Profile; snapshot: OpenCycle; spends: SpendRow[] };
 
 export const todayQuery = queryOptions({
   queryKey: ["today"],
