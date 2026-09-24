@@ -414,3 +414,24 @@
     padding: 14px 16px;
   }
 }
+
+.salary-prompt {
+  display: grid;
+  gap: 12px;
+  justify-items: start;
+  animation: fade-up 0.6s var(--ease) both;
+}
+.salary-prompt h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+}
+.salary-prompt p {
+  margin: 4px 0 0;
+  color: var(--text-soft);
+  font-weight: 500;
+}
+.salary-prompt.is-compact {
+  background: var(--accent-tint);
+  box-shadow: none;
+}

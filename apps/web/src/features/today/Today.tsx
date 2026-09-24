@@ -1,5 +1,8 @@
 import {
+  type CurrencyCode,
   type DayCell,
+  hasEvent,
+  type OpenCycle,
   type DayState,
   formatMoney,
   PACE_LABEL,
@@ -9,12 +12,13 @@ import {
   todayMood,
   toDayNum,
 } from "@coinfidant/engine";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Mascot } from "../../components/Mascot";
 import type { SessionUser } from "../../lib/auth";
 import { todayQuery, type TodayData } from "../../lib/today";
+import { markSalaryReceived } from "../../lib/transactions";
 import "./Today.css";
 
 const DAY_LETTERS = ["M", "T", "W", "T", "F", "S", "S"];
@@ -45,12 +49,13 @@ export function Today({ user }: { user: SessionUser }) {
       </div>
     );
 
-  return <TodayView data={data} user={user} />;
+  if (!data.snapshot) return <SalaryPrompt />;
+  return <TodayView data={data} snapshot={data.snapshot} user={user} />;
 }
 
-function TodayView({ data, user }: { data: TodayData; user: SessionUser }) {
-  const { snapshot: s, profile } = data;
-  const tone = TONES.find((t) => t.key === profile.personality) ?? TONES[1]!;
+function TodayView({ data, snapshot: s, user }: { data: TodayData; snapshot: OpenCycle; user: SessionUser }) {
+  const currency = data.currency;
+  const tone = TONES.find((t) => t.key === data.prefs.personality) ?? TONES[1]!;
   const pace = paceStatus(s);
   const daysDone = s.today.strip.filter((d) => d.state === "on" || d.state === "covered" || d.state === "over").length;
   const date = new Date(toDayNum(s.today.date) * 86_400_000);
@@ -82,16 +87,18 @@ function TodayView({ data, user }: { data: TodayData; user: SessionUser }) {
         </div>
       </header>
 
+      {hasEvent(s, "salaryOverdue") && <SalaryPrompt compact />}
+
       <div className="today__grid">
         <section className="card hero">
           <div className="label">You can spend today</div>
-          <div className="hero__amount">{formatMoney(Math.max(0, s.today.spendToday), profile.currency)}</div>
+          <div className="hero__amount">{formatMoney(Math.max(0, s.today.spendToday), currency)}</div>
           <Quip key={`${todayMood(s)}-${tone.key}`} lines={quipsFor(todayMood(s), tone.key)} />
           <div className="stats">
             <div className="stat">
               <div className="stat__label">Left this week</div>
               <div className={`stat__value ${s.today.leftThisWeek < 0 ? "is-over" : ""}`}>
-                {formatMoney(s.today.leftThisWeek, profile.currency)}
+                {formatMoney(s.today.leftThisWeek, currency)}
               </div>
             </div>
             <div className="stat">
@@ -99,7 +106,7 @@ function TodayView({ data, user }: { data: TodayData; user: SessionUser }) {
               <div className={`stat__value pace--${pace}`}>{PACE_LABEL[pace]}</div>
             </div>
           </div>
-          <StatusChips data={data} className="chips chips--desktop" />
+          <StatusChips snapshot={s} currency={currency} className="chips chips--desktop" />
         </section>
 
         <section className="card week">
@@ -117,13 +124,13 @@ function TodayView({ data, user }: { data: TodayData; user: SessionUser }) {
                 <span className="week__label" title={DAY_NAMES[i]}>
                   {STATE_LABEL[d.state]}
                 </span>
-                {d.spent > 0 && <span className="week__spent">{formatMoney(d.spent, profile.currency)}</span>}
+                {d.spent > 0 && <span className="week__spent">{formatMoney(d.spent, currency)}</span>}
               </li>
             ))}
           </ul>
         </section>
 
-        <StatusChips data={data} className="chips chips--mobile" />
+        <StatusChips snapshot={s} currency={currency} className="chips chips--mobile" />
       </div>
     </div>
   );
@@ -147,25 +154,30 @@ function WeekStrip({ cells }: { cells: DayCell[] }) {
   );
 }
 
-function StatusChips({ data, className }: { data: TodayData; className: string }) {
-  const { snapshot: s, profile } = data;
+function StatusChips({
+  snapshot: s,
+  currency,
+  className,
+}: {
+  snapshot: OpenCycle;
+  currency: CurrencyCode;
+  className: string;
+}) {
   const net = s.savings.net;
   return (
     <div className={className}>
       <div className="chip chip--bills">
         <div className="chip__title">🏠 Bills</div>
         <div className="chip__sub">
-          {profile.bills.length
-            ? `${formatMoney(s.plan.bills, profile.currency)} set aside`
-            : "No fixed bills. Lucky you."}
+          {s.plan.bills > 0 ? `${formatMoney(s.plan.bills, currency)} set aside` : "No fixed bills. Lucky you."}
         </div>
       </div>
       <div className="chip chip--goal">
         <div className="chip__title">🎯 Savings</div>
         <div className="chip__sub">
           {s.savings.borrowed > 0 && net < s.savings.planned
-            ? `Borrowed ${formatMoney(s.savings.borrowed, profile.currency)} this cycle`
-            : `+${formatMoney(net, profile.currency)} this cycle`}
+            ? `Borrowed ${formatMoney(s.savings.borrowed, currency)} this cycle`
+            : `+${formatMoney(net, currency)} this cycle`}
         </div>
       </div>
     </div>
@@ -199,5 +211,30 @@ function TodaySkeleton() {
         <div className="skeleton" style={{ height: 34 }} />
       </div>
     </div>
+  );
+}
+
+/** Asks whether salary has landed; confirming closes the old cycle and opens today's. */
+function SalaryPrompt({ compact = false }: { compact?: boolean }) {
+  const qc = useQueryClient();
+  const mark = useMutation({
+    mutationFn: () => markSalaryReceived(),
+    onSuccess: (res) => {
+      qc.setQueryData(todayQuery.queryKey, res.today);
+      qc.invalidateQueries({ queryKey: ["budget"] });
+    },
+  });
+  return (
+    <section className={`card salary-prompt ${compact ? "is-compact" : ""}`}>
+      {!compact && <Mascot mood="happy" size={56} />}
+      <div>
+        <h2>Did your salary land?</h2>
+        <p>Say the word and we'll close off the last cycle and plan the new one.</p>
+      </div>
+      <button className="btn" onClick={() => mark.mutate()} disabled={mark.isPending}>
+        Yes, it landed today
+      </button>
+      {mark.isError && <p role="alert">That didn't go through. Try again?</p>}
+    </section>
   );
 }

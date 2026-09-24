@@ -1,49 +1,43 @@
-import {
-  autoTag,
-  CATEGORIES,
-  type CategoryKey,
-  categoryOf,
-  formatMoney,
-  reactionFor,
-  type Tone,
-} from "@coinfidant/engine";
+import { autoTag, formatMoney, reactionFor, type Tone } from "@coinfidant/engine";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Mascot } from "../../components/Mascot";
-import { deleteSpend, logSpend } from "../../lib/spends";
-import { todayQuery, type SpendRow, type TodayData } from "../../lib/today";
+import { todayQuery, type TodayData, type TxnRow } from "../../lib/today";
+import { deleteTransaction, logTransaction } from "../../lib/transactions";
 import { fromMinorUnits, type Key, press, toMinorUnits } from "./amount";
 import "./QuickLog.css";
 
 const KEYS: Key[] = ["1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "0", "back"];
 const fmt = new Intl.NumberFormat("en-NG");
 
-type Saved = { spend: SpendRow; today: TodayData };
+type Saved = { id: string; today: TodayData };
 
 export function QuickLog() {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const { data } = useQuery(todayQuery);
   const [value, setValue] = useState("");
-  const [category, setCategory] = useState<CategoryKey>("food");
+  const categories = data?.categories ?? [];
+  const [picked, setCategory] = useState<string | null>(null);
+  const category = picked ?? categories[0]?.id ?? null;
   const [note, setNote] = useState<string | undefined>();
   const [saved, setSaved] = useState<Saved | null>(null);
 
-  const currency = data?.profile.currency ?? "NGN";
+  const currency = data?.currency ?? "NGN";
   const amount = toMinorUnits(value);
   const close = useCallback(() => navigate({ to: "/" }), [navigate]);
 
   const save = useMutation({
-    mutationFn: logSpend,
+    mutationFn: logTransaction,
     onSuccess: (res) => {
       qc.setQueryData(todayQuery.queryKey, res.today);
-      setSaved(res);
+      setSaved({ id: res.transaction.id, today: res.today });
     },
   });
 
   const undo = useMutation({
-    mutationFn: deleteSpend,
+    mutationFn: deleteTransaction,
     onSuccess: (res) => {
       qc.setQueryData(todayQuery.queryKey, res.today);
       close();
@@ -51,7 +45,7 @@ export function QuickLog() {
   });
 
   const submit = useCallback(() => {
-    if (amount > 0 && !save.isPending) save.mutate({ amount, category, note });
+    if (amount > 0 && category && !save.isPending) save.mutate({ amount, categoryId: category, note });
   }, [amount, category, note, save]);
 
   const tap = useCallback((key: Key) => {
@@ -74,12 +68,10 @@ export function QuickLog() {
     return () => window.removeEventListener("keydown", onKey);
   }, [saved, tap, submit, close]);
 
-  const presets = useMemo(() => frequentSpends(data?.spends ?? []), [data?.spends]);
+  const presets = useMemo(() => frequentSpends(data?.transactions ?? []), [data?.transactions]);
 
   if (saved)
-    return (
-      <Confirmation saved={saved} onDone={close} onUndo={() => undo.mutate(saved.spend.id)} undoing={undo.isPending} />
-    );
+    return <Confirmation saved={saved} onDone={close} onUndo={() => undo.mutate(saved.id)} undoing={undo.isPending} />;
 
   const [int = "", frac] = value.split(".");
 
@@ -102,15 +94,15 @@ export function QuickLog() {
       </div>
 
       <div className="log__chips" role="radiogroup" aria-label="Category">
-        {CATEGORIES.map((c) => (
+        {categories.map((c) => (
           <button
-            key={c.key}
+            key={c.id}
             role="radio"
-            aria-checked={category === c.key}
-            className={`cat-chip ${category === c.key ? "is-on" : ""}`}
-            onClick={() => setCategory(c.key)}
+            aria-checked={category === c.id}
+            className={`cat-chip ${category === c.id ? "is-on" : ""}`}
+            onClick={() => setCategory(c.id)}
           >
-            {c.emoji} {c.label}
+            {c.emoji} {c.name}
           </button>
         ))}
       </div>
@@ -119,16 +111,15 @@ export function QuickLog() {
         <div className="log__presets">
           {presets.map((p) => (
             <button
-              key={`${p.category}|${p.amount}|${p.note ?? ""}`}
+              key={`${p.categoryId}|${p.amount}|${p.note ?? ""}`}
               className="preset"
               onClick={() => {
                 setValue(fromMinorUnits(p.amount));
-                setCategory(p.category);
+                setCategory(p.categoryId);
                 setNote(p.note ?? undefined);
               }}
             >
-              {categoryOf(p.category).emoji} {p.note ?? categoryOf(p.category).label} ·{" "}
-              {formatMoney(p.amount, currency)}
+              {p.emoji} {p.note ?? p.name} · {formatMoney(p.amount, currency)}
             </button>
           ))}
         </div>
@@ -170,10 +161,12 @@ function Confirmation({
   onUndo: () => void;
   undoing: boolean;
 }) {
-  const { spend, today } = saved;
-  const s = today.snapshot;
-  const tone = today.profile.personality as Tone;
-  const tag = autoTag(spend, today.spends, { timeZone: today.profile.timezone, dailyPace: s.today.dailyPace });
+  const { today } = saved;
+  const s = today.snapshot!;
+  const tone = today.prefs.personality as Tone;
+  const slugged = today.transactions.map((t) => ({ ...t, category: t.category.slug ?? "other" }));
+  const spend = slugged.find((t) => t.id === saved.id);
+  const tag = spend ? autoTag(spend, slugged, { timeZone: today.prefs.timezone, dailyPace: s.today.dailyPace }) : null;
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -188,11 +181,11 @@ function Confirmation({
       <div className="log__pop">
         <Mascot mood="confirmed" size={72} float={false} />
       </div>
-      <p className="log__reaction">{reactionFor(spend.category, tone, s.today.spendToday < 0)}</p>
+      <p className="log__reaction">{reactionFor(spend?.category ?? "other", tone, s.today.spendToday < 0)}</p>
       <div className="card log__result">
         <div className="label">Left today</div>
-        <div className="log__left">{formatMoney(Math.max(0, s.today.spendToday), today.profile.currency)}</div>
-        <span className="log__tag">{tag}</span>
+        <div className="log__left">{formatMoney(Math.max(0, s.today.spendToday), today.currency)}</div>
+        {tag && <span className="log__tag">{tag}</span>}
       </div>
       <button className="btn log__back" onClick={onDone} autoFocus>
         Back to Today
@@ -204,20 +197,31 @@ function Confirmation({
   );
 }
 
-function frequentSpends(spends: SpendRow[]) {
+function frequentSpends(txns: TxnRow[]) {
   const groups = new Map<
     string,
-    { category: CategoryKey; amount: number; note: string | null; count: number; last: string }
+    {
+      categoryId: string;
+      name: string;
+      emoji: string;
+      amount: number;
+      note: string | null;
+      count: number;
+      last: string;
+    }
   >();
-  for (const s of spends) {
-    const key = `${s.category}|${s.amount}|${s.note ?? ""}`;
+  for (const s of txns) {
+    if (s.type !== "spend") continue;
+    const key = `${s.categoryId}|${s.amount}|${s.note ?? ""}`;
     const g = groups.get(key);
     if (g) {
       g.count++;
       if (s.occurredAt > g.last) g.last = s.occurredAt;
     } else {
       groups.set(key, {
-        category: s.category as CategoryKey,
+        categoryId: s.categoryId,
+        name: s.category.name,
+        emoji: s.category.emoji,
         amount: s.amount,
         note: s.note,
         count: 1,

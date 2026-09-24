@@ -1,59 +1,168 @@
-import { computeOpenCycle, cycleStartFor, localDate } from "@coinfidant/engine";
+import {
+  type Debt,
+  type EngineInput,
+  type ISODate,
+  localDate,
+  type SweepChoice,
+  type WeekStart,
+} from "@coinfidant/engine";
 import { and, asc, between, eq } from "drizzle-orm";
 import type { Tx } from "../db/db.module";
-import { bills, profiles, spends } from "../db/schema";
+import {
+  bills,
+  budgets,
+  categories,
+  commitments,
+  cycles,
+  debtPayments,
+  debts,
+  incomes,
+  sinkingFunds,
+  sweepChoices,
+  transactions,
+  users,
+} from "../db/schema";
 
-// Queries also filter by user_id: RLS is the safety net, not the only check.
+// Every query also filters by budget_id: RLS is the safety net, not the only check.
 
-export async function loadProfile(tx: Tx, userId: string) {
-  const [profile] = await tx.select().from(profiles).where(eq(profiles.userId, userId)).limit(1);
-  if (!profile) return null;
-  const billRows = await tx
-    .select({ id: bills.id, name: bills.name, amount: bills.amount })
-    .from(bills)
-    .where(eq(bills.userId, userId))
-    .orderBy(asc(bills.name));
-  return { ...profile, bills: billRows };
+export async function loadBudget(tx: Tx, budgetId: string) {
+  const [budget] = await tx.select().from(budgets).where(eq(budgets.id, budgetId)).limit(1);
+  if (!budget) return null;
+  const [incomeRows, billRows, fundRows, debtRows, commitmentRows, categoryRows] = await Promise.all([
+    tx.select().from(incomes).where(eq(incomes.budgetId, budgetId)).orderBy(asc(incomes.name)),
+    tx.select().from(bills).where(eq(bills.budgetId, budgetId)).orderBy(asc(bills.name)),
+    tx.select().from(sinkingFunds).where(eq(sinkingFunds.budgetId, budgetId)).orderBy(asc(sinkingFunds.dueDate)),
+    tx.select().from(debts).where(eq(debts.budgetId, budgetId)).orderBy(asc(debts.createdAt)),
+    tx.select().from(commitments).where(eq(commitments.budgetId, budgetId)).orderBy(asc(commitments.name)),
+    tx
+      .select()
+      .from(categories)
+      .where(eq(categories.budgetId, budgetId))
+      .orderBy(asc(categories.position), asc(categories.name)),
+  ]);
+  return {
+    ...budget,
+    incomes: incomeRows,
+    bills: billRows,
+    sinkingFunds: fundRows,
+    debts: debtRows,
+    commitments: commitmentRows,
+    categories: categoryRows,
+  };
+}
+export type LoadedBudget = NonNullable<Awaited<ReturnType<typeof loadBudget>>>;
+
+export const openCycleOf = (tx: Tx, budgetId: string) =>
+  tx
+    .select()
+    .from(cycles)
+    .where(and(eq(cycles.budgetId, budgetId), eq(cycles.status, "open")))
+    .limit(1)
+    .then((r) => r[0] ?? null);
+export type CycleRow = NonNullable<Awaited<ReturnType<typeof openCycleOf>>>;
+
+export async function userPrefs(tx: Tx, userId: string) {
+  const [u] = await tx
+    .select({ timezone: users.timezone, personality: users.personality, displayName: users.displayName })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+  return u ?? { timezone: "Africa/Lagos", personality: "cheeky", displayName: null };
 }
 
-export async function loadToday(tx: Tx, userId: string, now = new Date()) {
-  const profile = await loadProfile(tx, userId);
-  if (!profile) return null;
-
-  const today = localDate(now, profile.timezone);
-  // TODO(M3): start from the salary-received record instead of the expected payday.
-  const start = cycleStartFor(today, profile.payday);
-  const rows = await tx
+export function cycleTransactions(tx: Tx, budgetId: string, from: ISODate, to: ISODate) {
+  return tx
     .select({
-      id: spends.id,
-      amount: spends.amount,
-      category: spends.category,
-      note: spends.note,
-      occurredAt: spends.occurredAt,
-      localDate: spends.localDate,
+      id: transactions.id,
+      amount: transactions.amount,
+      type: transactions.type,
+      note: transactions.note,
+      occurredAt: transactions.occurredAt,
+      localDate: transactions.localDate,
+      categoryId: transactions.categoryId,
+      category: { name: categories.name, emoji: categories.emoji, slug: categories.slug },
     })
-    .from(spends)
-    .where(and(eq(spends.userId, userId), between(spends.localDate, start, today)))
-    .orderBy(asc(spends.occurredAt));
+    .from(transactions)
+    .innerJoin(categories, eq(categories.id, transactions.categoryId))
+    .where(and(eq(transactions.budgetId, budgetId), between(transactions.localDate, from, to)))
+    .orderBy(asc(transactions.occurredAt));
+}
 
-  const snapshot = computeOpenCycle({
+const debtPlan = (d: LoadedBudget["debts"][number]): Debt["plan"] => {
+  switch (d.plan) {
+    case "oneOff":
+      return { kind: "oneOff", due: d.dueDate! };
+    case "installments":
+      return { kind: "installments", perCycle: d.perCycle! };
+    default:
+      return { kind: "flexible", min: d.minAmount ?? 0, ideal: d.idealAmount ?? 0 };
+  }
+};
+
+/** Everything the engine needs for one cycle, read from the database. */
+export async function engineInput(
+  tx: Tx,
+  budget: LoadedBudget,
+  cycle: CycleRow,
+  today: ISODate,
+  lastDay: ISODate = today,
+): Promise<{ input: EngineInput; txns: Awaited<ReturnType<typeof cycleTransactions>> }> {
+  const [txns, payments, sweeps] = await Promise.all([
+    cycleTransactions(tx, budget.id, cycle.startDate, lastDay),
+    tx
+      .select()
+      .from(debtPayments)
+      .where(and(eq(debtPayments.budgetId, budget.id), eq(debtPayments.cycleId, cycle.id))),
+    tx
+      .select()
+      .from(sweepChoices)
+      .where(and(eq(sweepChoices.budgetId, budget.id), eq(sweepChoices.cycleId, cycle.id))),
+  ]);
+
+  const sweepMap: Record<number, SweepChoice> = {};
+  for (const s of sweeps) sweepMap[s.weekIndex] = s.debtId ? { to: "debt", debtId: s.debtId } : { to: "savings" };
+
+  const input: EngineInput = {
     today,
     settings: {
-      savingsPercent: profile.savingsPercent,
-      minSavingsPercent: 5,
-      floorPercent: 70,
-      weekStart: 0,
-      expectedPayday: profile.payday,
-      everydayEstimate: null,
+      savingsPercent: budget.savingsPercent,
+      minSavingsPercent: budget.minSavingsPercent,
+      floorPercent: budget.floorPercent,
+      weekStart: budget.weekStart as WeekStart,
+      expectedPayday: budget.expectedPayday,
+      everydayEstimate: budget.everydayEstimate,
     },
-    cycle: { start, salary: profile.salary },
-    bills: profile.bills,
-    sinkingFunds: [],
-    debts: [],
-    commitments: [],
-    transactions: rows.map((r) => ({ id: r.id, amount: r.amount, date: r.localDate, type: "spend" as const })),
-    sweepChoices: {},
-    debtPayments: [],
-  });
-  return { profile, snapshot, spends: rows };
+    cycle: { start: cycle.startDate, salary: cycle.salary },
+    bills: budget.bills.map((b) => ({ id: b.id, name: b.name, amount: b.amount })),
+    sinkingFunds: budget.sinkingFunds.map((f) => ({
+      id: f.id,
+      name: f.name,
+      target: f.target,
+      saved: f.saved,
+      due: f.dueDate,
+    })),
+    debts: budget.debts.map((d) => ({
+      id: d.id,
+      name: d.name,
+      creditor: d.creditor,
+      amountLeft: d.amountLeft,
+      hasInterest: d.hasInterest,
+      plan: debtPlan(d),
+    })),
+    commitments: budget.commitments.map((c) => ({ id: c.id, name: c.name, min: c.minAmount, ideal: c.idealAmount })),
+    transactions: txns.map((t) => ({
+      id: t.id,
+      amount: t.amount,
+      date: t.localDate,
+      type: t.type as "spend" | "refund",
+    })),
+    sweepChoices: sweepMap,
+    debtPayments: payments.map((p) => ({ debtId: p.debtId, amount: p.amount })),
+  };
+  return { input, txns };
 }
+
+export const todayFor = (timezone: string, now = new Date()) => localDate(now, timezone);
+
+export const activeCategories = (b: LoadedBudget) => b.categories.filter((c) => !c.archivedAt);
+export const isActiveCategory = (b: LoadedBudget, id: string) => activeCategories(b).some((c) => c.id === id);

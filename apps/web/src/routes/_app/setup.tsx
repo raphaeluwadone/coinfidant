@@ -6,5 +6,5 @@ export const Route = createFileRoute("/_app/setup")({
 });
 
 function SetupPage() {
-  return <SetupForm initial={Route.useRouteContext().profile} />;
+  return <SetupForm initial={Route.useRouteContext().budget} />;
 }

@@ -1,18 +1,27 @@
-import type { ISODate, Minor, OpenCycle } from "@coinfidant/engine";
+import type { CurrencyCode, ISODate, Minor, OpenCycle } from "@coinfidant/engine";
 import { queryOptions } from "@tanstack/react-query";
 import { api } from "./api";
-import type { Profile } from "./profile";
+import type { Category, Prefs } from "./budget";
 
-export type SpendRow = {
+export type TxnRow = {
   id: string;
   amount: Minor;
-  category: string;
+  type: "spend" | "refund";
   note: string | null;
   occurredAt: string;
   localDate: ISODate;
+  categoryId: string;
+  category: { name: string; emoji: string; slug: string | null };
 };
 
-export type TodayData = { profile: Profile; snapshot: OpenCycle; spends: SpendRow[] };
+export type TodayData = {
+  prefs: Prefs;
+  currency: CurrencyCode;
+  categories: Category[];
+  cycle: { id: string; startDate: ISODate; salary: Minor } | null;
+  snapshot: OpenCycle | null;
+  transactions: TxnRow[];
+};
 
 export const todayQuery = queryOptions({
   queryKey: ["today"],

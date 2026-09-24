@@ -1,36 +1,44 @@
 import { sql } from "drizzle-orm";
 import {
   bigint,
+  boolean,
   check,
   date,
   index,
+  jsonb,
   pgPolicy,
   pgRole,
   pgTable,
+  primaryKey,
   smallint,
   text,
   timestamp,
   unique,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 
 /** Login role the API connects as. It owns nothing and can't bypass row-level security. */
 export const appRole = pgRole("coinfidant_app").existing();
 
-const ownRows = (table: string) =>
-  pgPolicy(`${table}_owner`, {
-    for: "all",
-    to: appRole,
-    using: sql`user_id = nullif(current_setting('app.user_id', true), '')::uuid`,
-    withCheck: sql`user_id = nullif(current_setting('app.user_id', true), '')::uuid`,
-  });
+// app_user() reads the per-transaction user set by ScopedDb (migration 0005).
+const isMember = sql`budget_id in (select budget_id from budget_members where user_id = app_user())`;
+const inMyBudgets = (table: string) =>
+  pgPolicy(`${table}_member`, { for: "all", to: appRole, using: isMember, withCheck: isMember });
 
 const createdAt = () => timestamp("created_at", { withTimezone: true }).notNull().defaultNow();
+const money = (name: string) => bigint(name, { mode: "number" });
+const budgetRef = () =>
+  uuid("budget_id")
+    .notNull()
+    .references(() => budgets.id, { onDelete: "cascade" });
 
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
   email: text("email").notNull().unique(),
   displayName: text("display_name"),
+  timezone: text("timezone").notNull().default("Africa/Lagos"),
+  personality: text("personality").notNull().default("cheeky"),
   createdAt: createdAt(),
 });
 
@@ -65,67 +73,243 @@ export const refreshTokens = pgTable(
   (t) => [index().on(t.familyId), index().on(t.userId)],
 );
 
-const money = (name: string) => bigint(name, { mode: "number" });
-
-export const profiles = pgTable(
-  "profiles",
+export const budgets = pgTable(
+  "budgets",
   {
-    userId: uuid("user_id")
-      .primaryKey()
+    id: uuid("id").primaryKey().defaultRandom(),
+    ownerId: uuid("owner_id")
+      .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    salary: money("salary").notNull(),
-    savingsPercent: smallint("savings_percent").notNull(),
-    payday: smallint("payday").notNull(),
-    timezone: text("timezone").notNull().default("Africa/Lagos"),
     currency: text("currency").notNull().default("NGN"),
-    personality: text("personality").notNull().default("cheeky"),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    savingsPercent: smallint("savings_percent").notNull(),
+    minSavingsPercent: smallint("min_savings_percent").notNull().default(5),
+    floorPercent: smallint("floor_percent").notNull().default(70),
+    weekStart: smallint("week_start").notNull().default(0),
+    expectedPayday: smallint("expected_payday").notNull(),
+    everydayEstimate: money("everyday_estimate"),
+    createdAt: createdAt(),
   },
   (t) => [
-    check("profiles_salary_positive", sql`${t.salary} > 0`),
-    check("profiles_savings_range", sql`${t.savingsPercent} between 0 and 90`),
-    check("profiles_payday_range", sql`${t.payday} between 1 and 31`),
-    ownRows("profiles"),
+    index().on(t.ownerId),
+    check("budgets_savings_range", sql`${t.savingsPercent} between 0 and 90`),
+    check("budgets_min_savings_range", sql`${t.minSavingsPercent} between 0 and 90`),
+    check("budgets_floor_range", sql`${t.floorPercent} between 0 and 100`),
+    check("budgets_week_start_range", sql`${t.weekStart} between 0 and 6`),
+    check("budgets_payday_range", sql`${t.expectedPayday} between 1 and 31`),
+    // The creator can see their budget before the membership row exists.
+    pgPolicy("budgets_member", {
+      for: "all",
+      to: appRole,
+      using: sql`owner_id = app_user() or id in (select budget_id from budget_members where user_id = app_user())`,
+      withCheck: sql`owner_id = app_user() or id in (select budget_id from budget_members where user_id = app_user())`,
+    }),
   ],
+);
+
+export const budgetMembers = pgTable(
+  "budget_members",
+  {
+    budgetId: budgetRef(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    role: text("role").notNull().default("owner"),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.budgetId, t.userId] }),
+    index().on(t.userId),
+    pgPolicy("budget_members_self", {
+      for: "all",
+      to: appRole,
+      using: sql`user_id = app_user()`,
+      withCheck: sql`user_id = app_user()`,
+    }),
+  ],
+);
+
+export const incomes = pgTable(
+  "incomes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    budgetId: budgetRef(),
+    name: text("name").notNull(),
+    amount: money("amount").notNull(),
+    kind: text("kind").notNull().default("salary"),
+  },
+  (t) => [index().on(t.budgetId), check("incomes_amount_positive", sql`${t.amount} > 0`), inMyBudgets("incomes")],
 );
 
 export const bills = pgTable(
   "bills",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
+    budgetId: budgetRef(),
     name: text("name").notNull(),
     amount: money("amount").notNull(),
   },
+  (t) => [index().on(t.budgetId), check("bills_amount_positive", sql`${t.amount} > 0`), inMyBudgets("bills")],
+);
+
+export const sinkingFunds = pgTable(
+  "sinking_funds",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    budgetId: budgetRef(),
+    name: text("name").notNull(),
+    target: money("target").notNull(),
+    saved: money("saved").notNull().default(0),
+    dueDate: date("due_date").notNull(),
+  },
   (t) => [
-    index("bills_user_id_idx").on(t.userId),
-    check("bills_amount_positive", sql`${t.amount} > 0`),
-    ownRows("bills"),
+    index().on(t.budgetId),
+    check("sinking_funds_amounts", sql`${t.target} > 0 and ${t.saved} >= 0`),
+    inMyBudgets("sinking_funds"),
+  ],
+);
+
+export const debts = pgTable(
+  "debts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    budgetId: budgetRef(),
+    name: text("name").notNull(),
+    creditor: text("creditor").notNull(),
+    amountLeft: money("amount_left").notNull(),
+    hasInterest: boolean("has_interest").notNull().default(false),
+    plan: text("plan").notNull(),
+    dueDate: date("due_date"),
+    perCycle: money("per_cycle"),
+    minAmount: money("min_amount"),
+    idealAmount: money("ideal_amount"),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    index().on(t.budgetId),
+    check("debts_amount_left", sql`${t.amountLeft} >= 0`),
+    check(
+      "debts_plan_fields",
+      sql`(${t.plan} = 'oneOff' and ${t.dueDate} is not null)
+        or (${t.plan} = 'installments' and ${t.perCycle} > 0)
+        or (${t.plan} = 'flexible' and ${t.minAmount} >= 0 and ${t.idealAmount} >= ${t.minAmount})`,
+    ),
+    inMyBudgets("debts"),
+  ],
+);
+
+export const commitments = pgTable(
+  "commitments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    budgetId: budgetRef(),
+    name: text("name").notNull(),
+    minAmount: money("min_amount").notNull(),
+    idealAmount: money("ideal_amount").notNull(),
+  },
+  (t) => [
+    index().on(t.budgetId),
+    check("commitments_amounts", sql`${t.minAmount} >= 0 and ${t.idealAmount} >= ${t.minAmount}`),
+    inMyBudgets("commitments"),
+  ],
+);
+
+// `slug` marks the built-in defaults so auto-tags can recognise them after a rename.
+export const categories = pgTable(
+  "categories",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    budgetId: budgetRef(),
+    name: text("name").notNull(),
+    emoji: text("emoji").notNull(),
+    slug: text("slug"),
+    position: smallint("position").notNull().default(0),
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
+  },
+  (t) => [index().on(t.budgetId), inMyBudgets("categories")],
+);
+
+export const cycles = pgTable(
+  "cycles",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    budgetId: budgetRef(),
+    startDate: date("start_date").notNull(),
+    salary: money("salary").notNull(),
+    status: text("status").notNull().default("open"),
+    endDate: date("end_date"),
+    snapshot: jsonb("snapshot"),
+    engineVersion: text("engine_version"),
+    closedAt: timestamp("closed_at", { withTimezone: true }),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    unique("cycles_budget_start").on(t.budgetId, t.startDate),
+    uniqueIndex("cycles_one_open")
+      .on(t.budgetId)
+      .where(sql`${t.status} = 'open'`),
+    check("cycles_status", sql`${t.status} in ('open', 'closed', 'locked')`),
+    check("cycles_salary_positive", sql`${t.salary} > 0`),
+    inMyBudgets("cycles"),
   ],
 );
 
 // local_date is fixed at insert from the user's timezone so cycle queries don't shift if they travel.
-export const spends = pgTable(
-  "spends",
+export const transactions = pgTable(
+  "transactions",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
+    budgetId: budgetRef(),
+    createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
     amount: money("amount").notNull(),
-    category: text("category").notNull(),
+    type: text("type").notNull().default("spend"),
+    categoryId: uuid("category_id")
+      .notNull()
+      .references(() => categories.id),
     note: text("note"),
     occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull().defaultNow(),
     localDate: date("local_date").notNull(),
   },
   (t) => [
-    index("spends_user_date_idx").on(t.userId, t.localDate),
-    check("spends_amount_positive", sql`${t.amount} > 0`),
-    ownRows("spends"),
+    index().on(t.budgetId, t.localDate),
+    check("transactions_amount_positive", sql`${t.amount} > 0`),
+    check("transactions_type", sql`${t.type} in ('spend', 'refund')`),
+    inMyBudgets("transactions"),
   ],
 );
 
+export const debtPayments = pgTable(
+  "debt_payments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    budgetId: budgetRef(),
+    debtId: uuid("debt_id")
+      .notNull()
+      .references(() => debts.id, { onDelete: "cascade" }),
+    cycleId: uuid("cycle_id")
+      .notNull()
+      .references(() => cycles.id, { onDelete: "cascade" }),
+    amount: money("amount").notNull(),
+    paidOn: date("paid_on").notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    index().on(t.cycleId),
+    check("debt_payments_amount_positive", sql`${t.amount} > 0`),
+    inMyBudgets("debt_payments"),
+  ],
+);
+
+export const sweepChoices = pgTable(
+  "sweep_choices",
+  {
+    budgetId: budgetRef(),
+    cycleId: uuid("cycle_id")
+      .notNull()
+      .references(() => cycles.id, { onDelete: "cascade" }),
+    weekIndex: smallint("week_index").notNull(),
+    debtId: uuid("debt_id").references(() => debts.id, { onDelete: "cascade" }),
+  },
+  (t) => [primaryKey({ columns: [t.cycleId, t.weekIndex] }), inMyBudgets("sweep_choices")],
+);
+
 export type User = typeof users.$inferSelect;
-export type Profile = typeof profiles.$inferSelect;

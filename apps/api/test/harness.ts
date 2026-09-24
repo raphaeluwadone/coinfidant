@@ -65,6 +65,28 @@ export async function createTestApp() {
 }
 
 export type TestApp = Awaited<ReturnType<typeof createTestApp>>;
+export type Session = Awaited<ReturnType<TestApp["signIn"]>>;
+
+/** NGN 400,000 salary, NGN 60,000 rent, 10% savings: NGN 300,000 flexible. */
+export const SETUP = {
+  salary: 400_000_00,
+  expectedPayday: 31,
+  savingsPercent: 10,
+  bills: [{ name: "Rent", amount: 60_000_00 }],
+  timezone: "Africa/Lagos",
+};
+
+export const as = (t: TestApp, who: Session) => {
+  const write = (method: "post" | "put" | "patch", path: string, body?: object) =>
+    t.http()[method](path).set("Origin", ORIGIN).set("Cookie", who.cookie).send(body);
+  return {
+    get: (path: string) => t.http().get(path).set("Cookie", who.cookie),
+    post: (path: string, body?: object) => write("post", path, body),
+    put: (path: string, body?: object) => write("put", path, body),
+    patch: (path: string, body?: object) => write("patch", path, body),
+    del: (path: string) => t.http().delete(path).set("Origin", ORIGIN).set("Cookie", who.cookie),
+  };
+};
 
 export const cookieValue = (res: { headers: Record<string, unknown> }, name: string) => {
   const set = (res.headers["set-cookie"] as string[] | undefined) ?? [];

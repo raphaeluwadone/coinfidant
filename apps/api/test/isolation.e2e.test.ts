@@ -1,96 +1,67 @@
 import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { ScopedDb } from "../src/db/db.module";
-import { spends } from "../src/db/schema";
-import { createTestApp, ORIGIN, type TestApp } from "./harness";
+import { budgets, transactions } from "../src/db/schema";
+import { as, createTestApp, type Session, SETUP, type TestApp } from "./harness";
 
 let t: TestApp;
-let alice: Awaited<ReturnType<TestApp["signIn"]>>;
-let bob: Awaited<ReturnType<TestApp["signIn"]>>;
-
-const profile = {
-  salary: 400_000_00,
-  savingsPercent: 10,
-  payday: 31,
-  bills: [{ name: "Rent", amount: 60_000_00 }],
-};
-
-const as = (who: { cookie: string }) => ({
-  get: (path: string) => t.http().get(path).set("Cookie", who.cookie),
-  put: (path: string, body: unknown) =>
-    t
-      .http()
-      .put(path)
-      .set("Origin", ORIGIN)
-      .set("Cookie", who.cookie)
-      .send(body as object),
-  post: (path: string, body: unknown) =>
-    t
-      .http()
-      .post(path)
-      .set("Origin", ORIGIN)
-      .set("Cookie", who.cookie)
-      .send(body as object),
-  del: (path: string) => t.http().delete(path).set("Origin", ORIGIN).set("Cookie", who.cookie),
-});
+let alice: Session;
+let bob: Session;
+let aliceBudget: { id: string; categories: { id: string }[]; bills: { id: string }[] };
 
 beforeAll(async () => {
   t = await createTestApp();
   alice = await t.signIn();
   bob = await t.signIn();
-  expect((await as(alice).put("/api/profile", profile)).status).toBe(200);
-  expect((await as(bob).put("/api/profile", profile)).status).toBe(200);
+  aliceBudget = (await as(t, alice).post("/api/budget/setup", SETUP)).body.budget;
+  expect((await as(t, bob).post("/api/budget/setup", SETUP)).status).toBe(201);
 });
 afterAll(() => t.close());
 
-describe("budget API", () => {
-  it("logs a spend and returns the updated day", async () => {
-    const before = (await as(alice).get("/api/today")).body;
-    const res = await as(alice).post("/api/spends", { amount: 2_500_00, category: "food" });
-    expect(res.status).toBe(201);
-    expect(res.body.today.snapshot.today.spentToday).toBe(before.snapshot.today.spentToday + 2_500_00);
-  });
+describe("user isolation through the API", () => {
+  it("can't read, edit or delete another budget's rows", async () => {
+    const food = aliceBudget.categories[0]!.id;
+    const { body } = await as(t, alice).post("/api/transactions", { amount: 100_00, categoryId: food });
+    const txnId = body.transaction.id;
 
-  it("validates input with the shared contracts", async () => {
-    expect((await as(alice).post("/api/spends", { amount: 100, category: "yachts" })).status).toBe(400);
-    expect((await as(alice).post("/api/spends", { amount: 0, category: "food" })).status).toBe(400);
-    expect((await as(alice).put("/api/profile", { ...profile, payday: 32 })).status).toBe(400);
-    expect((await as(alice).put("/api/profile", { ...profile, timezone: "Mars/Olympus" })).status).toBe(400);
-    expect((await as(alice).del("/api/spends/not-a-uuid")).status).toBe(400);
+    expect((await as(t, bob).del(`/api/transactions/${txnId}`)).status).toBe(404);
+    expect((await as(t, bob).patch(`/api/transactions/${txnId}`, { amount: 1 })).status).toBe(404);
+    expect((await as(t, bob).patch(`/api/bills/${aliceBudget.bills[0]!.id}`, { amount: 1 })).status).toBe(404);
+    expect((await as(t, bob).post("/api/transactions", { amount: 1, categoryId: food })).status).toBe(400);
+    expect((await as(t, bob).get("/api/today")).body.transactions).toHaveLength(0);
+    expect((await as(t, alice).get("/api/today")).body.transactions.map((x: { id: string }) => x.id)).toContain(txnId);
   });
 
   it("requires a session everywhere", async () => {
-    expect((await t.http().get("/api/today")).status).toBe(401);
-    expect((await t.http().get("/api/profile")).status).toBe(401);
+    for (const path of ["/api/today", "/api/budget"]) expect((await t.http().get(path)).status).toBe(401);
   });
 });
 
-describe("user isolation", () => {
-  it("never shows or deletes another user's spends through the API", async () => {
-    const { body } = await as(alice).post("/api/spends", { amount: 100_00, category: "fun" });
-    expect((await as(bob).del(`/api/spends/${body.spend.id}`)).status).toBe(404);
-    expect((await as(bob).get("/api/today")).body.spends).toHaveLength(0);
-    expect((await as(alice).get("/api/today")).body.spends.map((s: { id: string }) => s.id)).toContain(body.spend.id);
-  });
-
-  it("row-level security hides other users' rows even without a user_id filter", async () => {
+describe("row-level security", () => {
+  it("hides other budgets' rows even without a budget_id filter", async () => {
     const scoped = t.app.get(ScopedDb);
-    const bobSees = await scoped.run(bob.user.id, (tx) => tx.select().from(spends));
-    expect(bobSees.every((s) => s.userId === bob.user.id)).toBe(true);
-    const aliceSees = await scoped.run(alice.user.id, (tx) => tx.select().from(spends));
-    expect(aliceSees.length).toBeGreaterThan(0);
+    const bobSees = await scoped.run(bob.user.id, (tx) => tx.select().from(transactions));
+    expect(bobSees.some((r) => r.budgetId === aliceBudget.id)).toBe(false);
+    const bobBudgets = await scoped.run(bob.user.id, (tx) => tx.select().from(budgets));
+    expect(bobBudgets).toHaveLength(1);
+    expect(bobBudgets[0]!.id).not.toBe(aliceBudget.id);
   });
 
-  it("row-level security returns nothing when no user is set", async () => {
-    const rows = await t.db.select().from(spends);
-    expect(rows).toHaveLength(0);
+  it("returns nothing when no user is set", async () => {
+    expect(await t.db.select().from(transactions)).toHaveLength(0);
+    expect(await t.db.select().from(budgets)).toHaveLength(0);
   });
 
-  it("row-level security blocks writing rows for someone else", async () => {
-    const scoped = t.app.get(ScopedDb);
-    const err = await scoped
+  it("blocks writing into someone else's budget", async () => {
+    const err = await t.app
+      .get(ScopedDb)
       .run(bob.user.id, (tx) =>
-        tx.insert(spends).values({ userId: alice.user.id, amount: 1, category: "food", localDate: "2026-09-24" }),
+        tx.insert(transactions).values({
+          budgetId: aliceBudget.id,
+          amount: 1,
+          categoryId: aliceBudget.categories[0]!.id,
+          localDate: "2026-09-24",
+        }),
       )
       .then(
         () => null,
@@ -99,8 +70,8 @@ describe("user isolation", () => {
     expect(err).toMatchObject({ code: "42501", message: expect.stringMatching(/row-level security/) });
   });
 
-  it("the API role can't switch RLS off", async () => {
-    await expect(t.db.execute(sql`alter table spends disable row level security`)).rejects.toThrow();
+  it("the API role can't switch it off", async () => {
+    await expect(t.db.execute(sql`alter table transactions disable row level security`)).rejects.toThrow();
     const [role] = await t.db.execute<{ rolsuper: boolean; rolbypassrls: boolean }>(
       sql`select rolsuper, rolbypassrls from pg_roles where rolname = current_user`,
     );

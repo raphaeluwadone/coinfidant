@@ -5,18 +5,22 @@ import { useMemo, useState, type FormEvent } from "react";
 import { Mascot } from "../../components/Mascot";
 import { MoneyInput } from "../../components/MoneyInput";
 import { logout, meQuery } from "../../lib/auth";
-import { type Bill, type Profile, profileQuery, saveProfile } from "../../lib/profile";
+import { type Bill, type BudgetData, budgetQuery, salaryOf, saveSetup } from "../../lib/budget";
 import "./SetupForm.css";
 
 const TZ = Intl.DateTimeFormat().resolvedOptions().timeZone || "Africa/Lagos";
 
-export function SetupForm({ initial }: { initial: Profile | null }) {
+export function SetupForm({ initial }: { initial: BudgetData | null }) {
   const qc = useQueryClient();
   const navigate = useNavigate();
-  const [salary, setSalary] = useState(initial?.salary ?? 0);
-  const [payday, setPayday] = useState(initial?.payday ?? 31);
-  const [savingsPercent, setSavings] = useState(initial?.savingsPercent ?? 10);
-  const [bills, setBills] = useState<Bill[]>(initial?.bills ?? [{ name: "Rent", amount: 0 }]);
+  const today = useMemo(() => localDate(new Date(), TZ), []);
+  const [salary, setSalary] = useState(initial ? salaryOf(initial.budget) : 0);
+  const [payday, setPayday] = useState(initial?.budget.expectedPayday ?? 31);
+  const [savingsPercent, setSavings] = useState(initial?.budget.savingsPercent ?? 10);
+  const [bills, setBills] = useState<Bill[]>(initial?.budget.bills ?? [{ name: "Rent", amount: 0 }]);
+  const [pickedSalaryOn, setLastSalaryOn] = useState<string | null>(null);
+  const lastSalaryOn = pickedSalaryOn ?? cycleStartFor(today, payday);
+  const cycleStart = initial?.openCycle?.startDate ?? lastSalaryOn;
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -24,7 +28,6 @@ export function SetupForm({ initial }: { initial: Profile | null }) {
 
   const preview = useMemo(() => {
     if (salary <= 0) return null;
-    const today = localDate(new Date(), TZ);
     return computeOpenCycle({
       today,
       settings: {
@@ -35,7 +38,7 @@ export function SetupForm({ initial }: { initial: Profile | null }) {
         expectedPayday: payday,
         everydayEstimate: null,
       },
-      cycle: { start: cycleStartFor(today, payday), salary },
+      cycle: { start: cycleStart, salary },
       bills: validBills.map((b, i) => ({ id: String(i), ...b })),
       sinkingFunds: [],
       debts: [],
@@ -44,7 +47,7 @@ export function SetupForm({ initial }: { initial: Profile | null }) {
       sweepChoices: {},
       debtPayments: [],
     });
-  }, [salary, validBills, savingsPercent, payday]);
+  }, [salary, validBills, savingsPercent, payday, today, cycleStart]);
 
   const overcommitted = preview ? hasEvent(preview, "overcommitted") : false;
   const perWeek = preview ? Math.round((preview.plan.flexible / preview.cycle.days) * 7) : 0;
@@ -54,14 +57,15 @@ export function SetupForm({ initial }: { initial: Profile | null }) {
     setBusy(true);
     setError(null);
     try {
-      const profile = await saveProfile({
+      await saveSetup({
         salary,
-        payday,
+        expectedPayday: payday,
         savingsPercent,
         timezone: TZ,
         bills: validBills.map(({ name, amount }) => ({ name: name.trim(), amount })),
+        ...(initial ? {} : { lastSalaryOn }),
       });
-      qc.setQueryData(profileQuery.queryKey, profile);
+      await qc.invalidateQueries({ queryKey: budgetQuery.queryKey });
       await qc.invalidateQueries({ queryKey: ["today"] });
       navigate({ to: "/" });
     } catch {
@@ -98,6 +102,19 @@ export function SetupForm({ initial }: { initial: Profile | null }) {
               ))}
             </select>
           </label>
+          {!initial && (
+            <label className="field">
+              <span className="label">When did your last salary land?</span>
+              <input
+                className="text-input"
+                type="date"
+                value={lastSalaryOn}
+                max={today}
+                required
+                onChange={(e) => e.target.value && setLastSalaryOn(e.target.value)}
+              />
+            </label>
+          )}
         </section>
 
         <section className="card setup__section">
