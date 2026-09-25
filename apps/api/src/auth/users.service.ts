@@ -21,6 +21,11 @@ export class UsersService {
       .then((r) => r[0]);
   }
 
+  async exists(id: string) {
+    const [row] = await this.db.select({ id: users.id }).from(users).where(eq(users.id, id)).limit(1);
+    return !!row;
+  }
+
   /** Signs in an existing identity, links a verified email to its account, or creates a new account. */
   async signIn(identity: ExternalIdentity): Promise<PublicUser> {
     return this.db.transaction(async (tx) => {

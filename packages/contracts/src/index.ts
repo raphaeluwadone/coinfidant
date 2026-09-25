@@ -168,4 +168,26 @@ export const coachReview = z.object({
 export type CoachReviewOutput = z.output<typeof coachReview>;
 export const coachRequest = z.object({ fresh: z.boolean().default(false) });
 
+// The server POSTs to this URL, so only real browser push services are accepted.
+const PUSH_HOSTS = [
+  /^fcm\.googleapis\.com$/,
+  /^updates\.push\.services\.mozilla\.com$/,
+  /^([a-z0-9-]+\.)*push\.apple\.com$/,
+  /^([a-z0-9-]+\.)*notify\.windows\.com$/,
+];
+const pushEndpoint = z
+  .url({ protocol: /^https$/ })
+  .max(1024)
+  .refine((u) => PUSH_HOSTS.some((re) => re.test(new URL(u).hostname)), "unknown push service");
+const b64url = z
+  .string()
+  .regex(/^[A-Za-z0-9_-]+={0,2}$/)
+  .max(256);
+export const pushSubscriptionInput = z.object({
+  endpoint: pushEndpoint,
+  keys: z.object({ p256dh: b64url, auth: b64url }),
+});
+export const pushUnsubscribeInput = z.object({ endpoint: z.string().max(1024) });
+export const deleteAccountInput = z.object({ confirm: z.literal("DELETE") });
+
 export const MAX_ACTIVE_CATEGORIES = 12;

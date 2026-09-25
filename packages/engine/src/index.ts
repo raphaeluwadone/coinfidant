@@ -15,3 +15,4 @@ export * from "./copy";
 export * from "./onboarding-copy";
 export * from "./tags";
 export * from "./coach";
+export * from "./checkin";

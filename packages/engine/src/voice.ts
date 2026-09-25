@@ -303,6 +303,21 @@ export const VOICE = {
     ["ATTACK {name} ⚔️ or HOARD IT 🌱? Choose wisely"],
   ),
 
+  // Push check-ins (M9)
+  "checkin.evening": all(
+    ["Evening. Anything to log today? You have {amount} for tomorrow."],
+    [
+      "Evening 🌙 Anything to log? {amount} is ready for tomorrow.",
+      "Quick one: anything to log? {amount} waiting for tomorrow.",
+    ],
+    ["EVENING CHECK 🌙📋 Log it before it escapes. {amount} LOCKED IN for tomorrow 🔒"],
+  ),
+  "checkin.drift": all(
+    ["This week is {amount} over plan. A quiet day tomorrow brings it back."],
+    ["This week has drifted {amount} over 👀 A chill day tomorrow fixes a lot."],
+    ["WEEK IS {amount} OVER 🚨 TOMORROW WE GO FULL MONK MODE 🧘"],
+  ),
+
   // Growth
   "badge.unlocked": all(
     ["New badge: {badge} {name}"],

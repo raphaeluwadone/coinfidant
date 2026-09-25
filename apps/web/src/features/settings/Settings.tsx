@@ -3,7 +3,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { logout, meQuery } from "../../lib/auth";
 import { type BudgetData, budgetQuery, savePreferences, saveSettings } from "../../lib/budget";
+import { disablePush } from "../../lib/push";
 import { todayQuery } from "../../lib/today";
+import { Notifications, YourData } from "./AccountSections";
 import "./Settings.css";
 
 const CURRENCIES = [
@@ -147,7 +149,10 @@ export function Settings() {
             ))}
           </select>
         </label>
+        {me.checkinMethod !== "app" && <Notifications />}
       </section>
+
+      <YourData />
 
       <section className="settings__links">
         <Link to="/setup" className="card settings__row settings__link">
@@ -157,6 +162,7 @@ export function Settings() {
         <button
           className="link-btn settings__logout"
           onClick={async () => {
+            await disablePush().catch(() => {});
             await logout();
             qc.clear();
             qc.setQueryData(meQuery.queryKey, null);

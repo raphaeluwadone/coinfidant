@@ -9,6 +9,7 @@ import { TokensService } from "../src/auth/tokens.service";
 import { UsersService } from "../src/auth/users.service";
 import { COACH_LLM, type CoachLlm, CoachLlmError } from "../src/coach/llm";
 import { CONFIG, loadConfig } from "../src/config";
+import { PUSH_SENDER, type PushPayload, type PushSender, type PushTarget } from "../src/push/sender";
 import { DB, type Db } from "../src/db/db.module";
 import { users } from "../src/db/schema";
 import { configureApp } from "../src/setup";
@@ -38,6 +39,18 @@ export class FakeCoach implements CoachLlm {
   }
 }
 
+export class FakePush implements PushSender {
+  available = true;
+  publicKey = "test-public-key";
+  sent: { to: PushTarget; payload: PushPayload }[] = [];
+  gone = new Set<string>();
+  async send(to: PushTarget, payload: PushPayload) {
+    if (this.gone.has(to.endpoint)) return "gone" as const;
+    this.sent.push({ to, payload });
+    return "ok" as const;
+  }
+}
+
 export async function createTestApp(opts: { env?: Record<string, string> } = {}) {
   const config = loadConfig({
     ...process.env,
@@ -49,11 +62,14 @@ export async function createTestApp(opts: { env?: Record<string, string> } = {})
     ...opts.env,
   });
   const coach = new FakeCoach();
+  const push = new FakePush();
   const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
     .overrideProvider(CONFIG)
     .useValue(config)
     .overrideProvider(COACH_LLM)
     .useValue(coach)
+    .overrideProvider(PUSH_SENDER)
+    .useValue(push)
     .compile();
   const app = configureApp(moduleRef.createNestApplication(), config) as INestApplication;
   // Listen once on IPv4 loopback. Letting supertest bind port 0 per request can pick a port that another local
@@ -69,6 +85,7 @@ export async function createTestApp(opts: { env?: Record<string, string> } = {})
     app,
     db,
     coach,
+    push,
     http: () => request(base),
     users: app.get(UsersService),
     tokens: app.get(TokensService),

@@ -41,12 +41,12 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      - run: psql "$MIGRATION_DATABASE_URL" -v pw="$APP_DB_PASSWORD" -f scripts/create-app-role.sql
-        working-directory: apps/api
-      - run: npx tsx src/db/migrate.ts
-        working-directory: apps/api
+      # The same bundled release step production runs: creates the app role, then migrates.
+      - run: npm run build -w @coinfidant/api
+      - run: npm run release -w @coinfidant/api
       - run: npm run format:check
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
       - run: npm run build -w @coinfidant/web
+      - run: docker build -t coinfidant:ci .

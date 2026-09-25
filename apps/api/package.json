@@ -8,7 +8,10 @@
     "db:migrate": "tsx --env-file=.env src/db/migrate.ts",
     "db:role": "docker compose -f ../../docker-compose.yml exec -T db psql -U coinfidant -d coinfidant -v pw=\"$APP_DB_PASSWORD\" -f - < scripts/create-app-role.sql",
     "test": "vitest run",
-    "typecheck": "tsc -p ."
+    "typecheck": "tsc -p .",
+    "build": "node build.mjs",
+    "start": "node --enable-source-maps dist/main.js",
+    "release": "node --enable-source-maps dist/release.js"
   },
   "dependencies": {
     "@coinfidant/contracts": "*",
@@ -26,6 +29,7 @@
     "postgres": "^3.4.9",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
+    "web-push": "^3.6.7",
     "zod": "^4.6.5"
   },
   "devDependencies": {
@@ -35,7 +39,9 @@
     "@types/node": "^24.0.0",
     "@types/passport-google-oauth20": "^2.0.17",
     "@types/supertest": "^7.2.1",
+    "@types/web-push": "^3.6.4",
     "drizzle-kit": "^0.31.11",
+    "esbuild": "^0.28.2",
     "supertest": "^7.3.0",
     "tsx": "^4.23.15",
     "vitest": "^5.0.1"

@@ -49,6 +49,8 @@ export const users = pgTable("users", {
     .array()
     .notNull()
     .default(sql`'{}'::text[]`),
+  /** Local date of the last check-in push, so each user gets at most one a day. */
+  lastCheckinOn: date("last_checkin_on", { mode: "string" }),
   createdAt: createdAt(),
 });
 
@@ -398,6 +400,30 @@ export const adviceReviews = pgTable(
     index().on(t.cycleId),
     check("advice_reviews_pace", sql`${t.pace} in ('ahead', 'onPace', 'behind')`),
     inMyBudgets("advice_reviews"),
+  ],
+);
+
+/** Web push endpoints (M9). The keys are the browser's public encryption keys, not secrets of ours. */
+export const pushSubscriptions = pgTable(
+  "push_subscriptions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    endpoint: text("endpoint").notNull(),
+    p256dh: text("p256dh").notNull(),
+    auth: text("auth").notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    unique("push_subscriptions_user_endpoint").on(t.userId, t.endpoint),
+    pgPolicy("push_subscriptions_self", {
+      for: "all",
+      to: appRole,
+      using: sql`user_id = app_user()`,
+      withCheck: sql`user_id = app_user()`,
+    }),
   ],
 );
 

@@ -191,3 +191,48 @@
   outline: 2px solid var(--accent-text);
   outline-offset: 2px;
 }
+
+button.settings__row {
+  width: 100%;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.settings__danger {
+  justify-self: start;
+  margin-top: 4px;
+  color: var(--danger);
+}
+.settings__confirm {
+  display: grid;
+  gap: 10px;
+}
+.settings__confirm p {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.settings__confirm label {
+  font-size: 13px;
+  font-weight: 700;
+}
+.settings__input {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+}
+.settings__confirm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+.btn--danger {
+  background: var(--danger);
+}
