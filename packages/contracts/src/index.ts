@@ -157,4 +157,15 @@ export const todayQuery = z.object({
     .pipe(z.array(insightKey).max(11)),
 });
 
+const line = (max: number) => z.string().trim().min(1).max(max);
+/** What the coach model must return; anything else is rejected. */
+export const coachReview = z.object({
+  verdict: z.object({ label: line(60), line: line(280) }),
+  lever: line(320),
+  target: line(320),
+  observation: line(320),
+});
+export type CoachReviewOutput = z.output<typeof coachReview>;
+export const coachRequest = z.object({ fresh: z.boolean().default(false) });
+
 export const MAX_ACTIVE_CATEGORIES = 12;

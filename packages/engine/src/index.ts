@@ -14,3 +14,4 @@ export * from "./voice";
 export * from "./copy";
 export * from "./onboarding-copy";
 export * from "./tags";
+export * from "./coach";

@@ -1,0 +1,107 @@
+.coach {
+  display: grid;
+  gap: 16px;
+  max-width: 560px;
+}
+.coach__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.coach__head h1 {
+  margin: 0;
+  font-size: 18px;
+}
+.coach p {
+  margin: 0;
+}
+.coach__intro {
+  display: grid;
+  gap: 8px;
+}
+.coach__intro h2 {
+  margin: 0;
+  font-size: 18px;
+}
+.coach__intro p,
+.coach__verdict p {
+  color: var(--text-soft);
+  font-weight: 600;
+  line-height: 1.5;
+}
+.coach__eyebrow {
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+}
+.coach__label {
+  margin-bottom: 6px;
+  font-size: 22px;
+  font-weight: 800;
+}
+.pace-ahead {
+  color: var(--success);
+}
+.pace-onPace {
+  color: var(--accent-text);
+}
+.pace-behind {
+  color: var(--warn);
+}
+.coach__lever {
+  padding: 20px;
+  border-radius: var(--radius-card);
+  background: var(--success-tint);
+}
+.coach__lever .coach__eyebrow,
+.coach__target .coach__eyebrow {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent-text);
+}
+.coach__lever p,
+.coach__target p,
+.coach__long p {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+.coach__ask {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+}
+.coach__ask .btn {
+  width: 100%;
+}
+.coach__left,
+.coach__note {
+  font-size: 13px;
+  color: var(--text-muted);
+  text-align: center;
+}
+.coach__history h2 {
+  margin: 8px 0 10px;
+  font-size: 15px;
+}
+.coach__history ul {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.coach__history summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 14px;
+}
+.coach__history details p {
+  margin-top: 8px;
+  font-size: 14px;
+  color: var(--text-soft);
+}

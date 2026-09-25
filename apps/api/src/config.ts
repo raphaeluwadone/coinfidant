@@ -9,6 +9,13 @@ const schema = z.object({
   GOOGLE_CLIENT_ID: z.string().min(1),
   GOOGLE_CLIENT_SECRET: z.string().min(1),
   GOOGLE_CALLBACK_URL: z.url(),
+  // The coach is optional: without a key the rest of the app runs and /coach says it's unavailable.
+  ANTHROPIC_API_KEY: z
+    .string()
+    .optional()
+    .transform((v) => v || undefined),
+  COACH_MODEL: z.string().min(1).default("claude-sonnet-5"),
+  COACH_CYCLE_CAP: z.coerce.number().int().min(0).default(6),
 });
 
 export type Config = z.infer<typeof schema>;

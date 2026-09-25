@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ComingSoon } from "../../../components/ComingSoon";
+import { Coach } from "../../../features/coach/Coach";
+import { coachQuery } from "../../../lib/coach";
 
 export const Route = createFileRoute("/_app/_shell/coach")({
-  component: () => <ComingSoon title="Coach" line="Your coach is still stretching. Coming soon." />,
+  loader: ({ context }) => context.queryClient.prefetchQuery(coachQuery),
+  component: Coach,
 });

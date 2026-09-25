@@ -148,6 +148,12 @@ Only transactions dated inside the open cycle count. Fixed bills are never trans
   averaging 2x the rest (after 10 days), a logging streak of 3+, a logging gap of 2+ days, payday within 3 days, and
   the attack target. Warnings outrank good news, which outranks information. Keys shown recently are skipped while at
   least 2 others remain; at most 3 are returned. Discovery drops pace and streak insights.
+- **R28 Coach payload.** A review is about this week once it is 2+ days old, otherwise last week. Pace is decided
+  here, not by the model: a finished week is behind if it went over and ahead if it swept a leftover; a week in
+  progress is behind above 105% of its prorated budget (or over the whole budget) and ahead below 90%. The payload
+  carries only aggregates, pre-formatted money, the top 5 categories with shares, event types, the phase, the tone,
+  the attack target and the previous review's target. It never carries notes, merchants, individual spends or the
+  user's identity.
 
 ### Money
 

@@ -101,6 +101,12 @@ function TodayView({ data, snapshot: s, user }: { data: TodayData; snapshot: Ope
       {s.cycle.overrunDays > 0 && <SalaryPrompt compact overdue={hasEvent(s, "salaryOverdue")} />}
       {data.discovery && <DiscoveryCard progress={data.discovery} />}
       {phase && <JourneyStrip phase={phase} />}
+      {s.today.daysLeftInWeek <= 1 && s.today.week.spent > 0 && (
+        <Link to="/coach" className="card coach-nudge">
+          <span aria-hidden="true">🔮</span>
+          <span>Week's nearly done. Want Pix's read on it? →</span>
+        </Link>
+      )}
 
       <div className="today__grid">
         <section className="card hero">

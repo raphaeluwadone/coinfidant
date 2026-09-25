@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import {
   bigint,
   boolean,
+  integer,
   check,
   date,
   index,
@@ -372,6 +373,32 @@ export const sweepChoices = pgTable(
     debtId: uuid("debt_id").references(() => debts.id, { onDelete: "cascade" }),
   },
   (t) => [primaryKey({ columns: [t.cycleId, t.weekIndex] }), inMyBudgets("sweep_choices")],
+);
+
+/** Stored coach reviews (M8): the exact payload sent, what came back, and what it cost. */
+export const adviceReviews = pgTable(
+  "advice_reviews",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    budgetId: budgetRef(),
+    cycleId: uuid("cycle_id")
+      .notNull()
+      .references(() => cycles.id, { onDelete: "cascade" }),
+    weekIndex: smallint("week_index").notNull(),
+    pace: text("pace").notNull(),
+    payload: jsonb("payload").notNull(),
+    review: jsonb("review").notNull(),
+    model: text("model").notNull(),
+    inputTokens: integer("input_tokens").notNull().default(0),
+    outputTokens: integer("output_tokens").notNull().default(0),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    index().on(t.budgetId, t.createdAt),
+    index().on(t.cycleId),
+    check("advice_reviews_pace", sql`${t.pace} in ('ahead', 'onPace', 'behind')`),
+    inMyBudgets("advice_reviews"),
+  ],
 );
 
 export type User = typeof users.$inferSelect;

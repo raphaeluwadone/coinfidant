@@ -1,0 +1,2067 @@
+{
+  "id": "2024bfc4-414c-4b68-96a9-1e5711eb0169",
+  "prevId": "653ddb98-f62a-45b5-81d0-6f716d01baa7",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.advice_reviews": {
+      "name": "advice_reviews",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "budget_id": {
+          "name": "budget_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cycle_id": {
+          "name": "cycle_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "week_index": {
+          "name": "week_index",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "pace": {
+          "name": "pace",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "payload": {
+          "name": "payload",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "review": {
+          "name": "review",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "model": {
+          "name": "model",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "input_tokens": {
+          "name": "input_tokens",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "output_tokens": {
+          "name": "output_tokens",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "advice_reviews_budget_id_created_at_index": {
+          "name": "advice_reviews_budget_id_created_at_index",
+          "columns": [
+            {
+              "expression": "budget_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "advice_reviews_cycle_id_index": {
+          "name": "advice_reviews_cycle_id_index",
+          "columns": [
+            {
+              "expression": "cycle_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "advice_reviews_budget_id_budgets_id_fk": {
+          "name": "advice_reviews_budget_id_budgets_id_fk",
+          "tableFrom": "advice_reviews",
+          "tableTo": "budgets",
+          "columnsFrom": [
+            "budget_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "advice_reviews_cycle_id_cycles_id_fk": {
+          "name": "advice_reviews_cycle_id_cycles_id_fk",
+          "tableFrom": "advice_reviews",
+          "tableTo": "cycles",
+          "columnsFrom": [
+            "cycle_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "advice_reviews_member": {
+          "name": "advice_reviews_member",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "coinfidant_app"
+          ],
+          "using": "budget_id in (select budget_id from budget_members where user_id = app_user())",
+          "withCheck": "budget_id in (select budget_id from budget_members where user_id = app_user())"
+        }
+      },
+      "checkConstraints": {
+        "advice_reviews_pace": {
+          "name": "advice_reviews_pace",
+          "value": "\"advice_reviews\".\"pace\" in ('ahead', 'onPace', 'behind')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.auth_identities": {
+      "name": "auth_identities",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider": {
+          "name": "provider",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider_user_id": {
+          "name": "provider_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "auth_identities_user_id_index": {
+          "name": "auth_identities_user_id_index",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "auth_identities_user_id_users_id_fk": {
+          "name": "auth_identities_user_id_users_id_fk",
+          "tableFrom": "auth_identities",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "auth_identities_provider_uid": {
+          "name": "auth_identities_provider_uid",
+          "nullsNotDistinct": false,
+          "columns": [
+            "provider",
+            "provider_user_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.bills": {
+      "name": "bills",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "budget_id": {
+          "name": "budget_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "amount": {
+          "name": "amount",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "bills_budget_id_index": {
+          "name": "bills_budget_id_index",
+          "columns": [
+            {
+              "expression": "budget_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "bills_budget_id_budgets_id_fk": {
+          "name": "bills_budget_id_budgets_id_fk",
+          "tableFrom": "bills",
+          "tableTo": "budgets",
+          "columnsFrom": [
+            "budget_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "bills_member": {
+          "name": "bills_member",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "coinfidant_app"
+          ],
+          "using": "budget_id in (select budget_id from budget_members where user_id = app_user())",
+          "withCheck": "budget_id in (select budget_id from budget_members where user_id = app_user())"
+        }
+      },
+      "checkConstraints": {
+        "bills_amount_positive": {
+          "name": "bills_amount_positive",
+          "value": "\"bills\".\"amount\" > 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.budget_members": {
+      "name": "budget_members",
+      "schema": "",
+      "columns": {
+        "budget_id": {
+          "name": "budget_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "role": {
+          "name": "role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'owner'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "budget_members_user_id_index": {
+          "name": "budget_members_user_id_index",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "budget_members_budget_id_budgets_id_fk": {
+          "name": "budget_members_budget_id_budgets_id_fk",
+          "tableFrom": "budget_members",
+          "tableTo": "budgets",
+          "columnsFrom": [
+            "budget_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "budget_members_user_id_users_id_fk": {
+          "name": "budget_members_user_id_users_id_fk",
+          "tableFrom": "budget_members",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "budget_members_budget_id_user_id_pk": {
+          "name": "budget_members_budget_id_user_id_pk",
+          "columns": [
+            "budget_id",
+            "user_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {
+        "budget_members_self": {
+          "name": "budget_members_self",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "coinfidant_app"
+          ],
+          "using": "user_id = app_user()",
+          "withCheck": "user_id = app_user()"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.budgets": {
+      "name": "budgets",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "owner_id": {
+          "name": "owner_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "currency": {
+          "name": "currency",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'NGN'"
+        },
+        "savings_percent": {
+          "name": "savings_percent",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "min_savings_percent": {
+          "name": "min_savings_percent",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 5
+        },
+        "floor_percent": {
+          "name": "floor_percent",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 70
+        },
+        "week_start": {
+          "name": "week_start",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "expected_payday": {
+          "name": "expected_payday",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "everyday_estimate": {
+          "name": "everyday_estimate",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "leftover_default": {
+          "name": "leftover_default",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'savings'"
+        },
+        "payday_mode": {
+          "name": "payday_mode",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "discovery": {
+          "name": "discovery",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "phase": {
+          "name": "phase",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "phase_from": {
+          "name": "phase_from",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "budgets_owner_id_index": {
+          "name": "budgets_owner_id_index",
+          "columns": [
+            {
+              "expression": "owner_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "budgets_owner_id_users_id_fk": {
+          "name": "budgets_owner_id_users_id_fk",
+          "tableFrom": "budgets",
+          "tableTo": "users",
+          "columnsFrom": [
+            "owner_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "budgets_member": {
+          "name": "budgets_member",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "coinfidant_app"
+          ],
+          "using": "owner_id = app_user() or id in (select budget_id from budget_members where user_id = app_user())",
+          "withCheck": "owner_id = app_user() or id in (select budget_id from budget_members where user_id = app_user())"
+        }
+      },
+      "checkConstraints": {
+        "budgets_savings_range": {
+          "name": "budgets_savings_range",
+          "value": "\"budgets\".\"savings_percent\" between 0 and 90"
+        },
+        "budgets_min_savings_range": {
+          "name": "budgets_min_savings_range",
+          "value": "\"budgets\".\"min_savings_percent\" between 0 and 90"
+        },
+        "budgets_floor_range": {
+          "name": "budgets_floor_range",
+          "value": "\"budgets\".\"floor_percent\" between 0 and 100"
+        },
+        "budgets_week_start_range": {
+          "name": "budgets_week_start_range",
+          "value": "\"budgets\".\"week_start\" between 0 and 6"
+        },
+        "budgets_payday_range": {
+          "name": "budgets_payday_range",
+          "value": "\"budgets\".\"expected_payday\" between 1 and 31"
+        },
+        "budgets_leftover_default": {
+          "name": "budgets_leftover_default",
+          "value": "\"budgets\".\"leftover_default\" in ('savings', 'debts')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.categories": {
+      "name": "categories",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "budget_id": {
+          "name": "budget_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "emoji": {
+          "name": "emoji",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "slug": {
+          "name": "slug",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "position": {
+          "name": "position",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "archived_at": {
+          "name": "archived_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "categories_budget_id_index": {
+          "name": "categories_budget_id_index",
+          "columns": [
+            {
+              "expression": "budget_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "categories_budget_id_budgets_id_fk": {
+          "name": "categories_budget_id_budgets_id_fk",
+          "tableFrom": "categories",
+          "tableTo": "budgets",
+          "columnsFrom": [
+            "budget_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "categories_member": {
+          "name": "categories_member",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "coinfidant_app"
+          ],
+          "using": "budget_id in (select budget_id from budget_members where user_id = app_user())",
+          "withCheck": "budget_id in (select budget_id from budget_members where user_id = app_user())"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.commitments": {
+      "name": "commitments",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "budget_id": {
+          "name": "budget_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "min_amount": {
+          "name": "min_amount",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ideal_amount": {
+          "name": "ideal_amount",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "commitments_budget_id_index": {
+          "name": "commitments_budget_id_index",
+          "columns": [
+            {
+              "expression": "budget_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "commitments_budget_id_budgets_id_fk": {
+          "name": "commitments_budget_id_budgets_id_fk",
+          "tableFrom": "commitments",
+          "tableTo": "budgets",
+          "columnsFrom": [
+            "budget_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "commitments_member": {
+          "name": "commitments_member",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "coinfidant_app"
+          ],
+          "using": "budget_id in (select budget_id from budget_members where user_id = app_user())",
+          "withCheck": "budget_id in (select budget_id from budget_members where user_id = app_user())"
+        }
+      },
+      "checkConstraints": {
+        "commitments_amounts": {
+          "name": "commitments_amounts",
+          "value": "\"commitments\".\"min_amount\" >= 0 and \"commitments\".\"ideal_amount\" >= \"commitments\".\"min_amount\""
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.cycle_top_ups": {
+      "name": "cycle_top_ups",
+      "schema": "",
+      "columns": {
+        "budget_id": {
+          "name": "budget_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cycle_id": {
+          "name": "cycle_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "item_kind": {
+          "name": "item_kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "item_id": {
+          "name": "item_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "amount": {
+          "name": "amount",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "cycle_top_ups_budget_id_budgets_id_fk": {
+          "name": "cycle_top_ups_budget_id_budgets_id_fk",
+          "tableFrom": "cycle_top_ups",
+          "tableTo": "budgets",
+          "columnsFrom": [
+            "budget_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "cycle_top_ups_cycle_id_cycles_id_fk": {
+          "name": "cycle_top_ups_cycle_id_cycles_id_fk",
+          "tableFrom": "cycle_top_ups",
+          "tableTo": "cycles",
+          "columnsFrom": [
+            "cycle_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "cycle_top_ups_cycle_id_item_id_pk": {
+          "name": "cycle_top_ups_cycle_id_item_id_pk",
+          "columns": [
+            "cycle_id",
+            "item_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {
+        "cycle_top_ups_member": {
+          "name": "cycle_top_ups_member",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "coinfidant_app"
+          ],
+          "using": "budget_id in (select budget_id from budget_members where user_id = app_user())",
+          "withCheck": "budget_id in (select budget_id from budget_members where user_id = app_user())"
+        }
+      },
+      "checkConstraints": {
+        "cycle_top_ups_kind": {
+          "name": "cycle_top_ups_kind",
+          "value": "\"cycle_top_ups\".\"item_kind\" in ('commitment', 'debt')"
+        },
+        "cycle_top_ups_amount": {
+          "name": "cycle_top_ups_amount",
+          "value": "\"cycle_top_ups\".\"amount\" > 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.cycles": {
+      "name": "cycles",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "budget_id": {
+          "name": "budget_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "start_date": {
+          "name": "start_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "salary": {
+          "name": "salary",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'open'"
+        },
+        "end_date": {
+          "name": "end_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "snapshot": {
+          "name": "snapshot",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "engine_version": {
+          "name": "engine_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "closed_at": {
+          "name": "closed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "payday_seen_at": {
+          "name": "payday_seen_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "learned": {
+          "name": "learned",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "close_input": {
+          "name": "close_input",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "cycles_one_open": {
+          "name": "cycles_one_open",
+          "columns": [
+            {
+              "expression": "budget_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"cycles\".\"status\" = 'open'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "cycles_budget_id_budgets_id_fk": {
+          "name": "cycles_budget_id_budgets_id_fk",
+          "tableFrom": "cycles",
+          "tableTo": "budgets",
+          "columnsFrom": [
+            "budget_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "cycles_budget_start": {
+          "name": "cycles_budget_start",
+          "nullsNotDistinct": false,
+          "columns": [
+            "budget_id",
+            "start_date"
+          ]
+        }
+      },
+      "policies": {
+        "cycles_member": {
+          "name": "cycles_member",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "coinfidant_app"
+          ],
+          "using": "budget_id in (select budget_id from budget_members where user_id = app_user())",
+          "withCheck": "budget_id in (select budget_id from budget_members where user_id = app_user())"
+        }
+      },
+      "checkConstraints": {
+        "cycles_status": {
+          "name": "cycles_status",
+          "value": "\"cycles\".\"status\" in ('open', 'closed', 'locked')"
+        },
+        "cycles_salary_positive": {
+          "name": "cycles_salary_positive",
+          "value": "\"cycles\".\"salary\" > 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.debt_payments": {
+      "name": "debt_payments",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "budget_id": {
+          "name": "budget_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "debt_id": {
+          "name": "debt_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cycle_id": {
+          "name": "cycle_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "amount": {
+          "name": "amount",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "paid_on": {
+          "name": "paid_on",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "debt_payments_cycle_id_index": {
+          "name": "debt_payments_cycle_id_index",
+          "columns": [
+            {
+              "expression": "cycle_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "debt_payments_budget_id_budgets_id_fk": {
+          "name": "debt_payments_budget_id_budgets_id_fk",
+          "tableFrom": "debt_payments",
+          "tableTo": "budgets",
+          "columnsFrom": [
+            "budget_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "debt_payments_debt_id_debts_id_fk": {
+          "name": "debt_payments_debt_id_debts_id_fk",
+          "tableFrom": "debt_payments",
+          "tableTo": "debts",
+          "columnsFrom": [
+            "debt_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "debt_payments_cycle_id_cycles_id_fk": {
+          "name": "debt_payments_cycle_id_cycles_id_fk",
+          "tableFrom": "debt_payments",
+          "tableTo": "cycles",
+          "columnsFrom": [
+            "cycle_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "debt_payments_member": {
+          "name": "debt_payments_member",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "coinfidant_app"
+          ],
+          "using": "budget_id in (select budget_id from budget_members where user_id = app_user())",
+          "withCheck": "budget_id in (select budget_id from budget_members where user_id = app_user())"
+        }
+      },
+      "checkConstraints": {
+        "debt_payments_amount_positive": {
+          "name": "debt_payments_amount_positive",
+          "value": "\"debt_payments\".\"amount\" > 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.debts": {
+      "name": "debts",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "budget_id": {
+          "name": "budget_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "creditor": {
+          "name": "creditor",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "amount_left": {
+          "name": "amount_left",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "original_amount": {
+          "name": "original_amount",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "has_interest": {
+          "name": "has_interest",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "plan": {
+          "name": "plan",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "due_date": {
+          "name": "due_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "per_cycle": {
+          "name": "per_cycle",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "min_amount": {
+          "name": "min_amount",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ideal_amount": {
+          "name": "ideal_amount",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "debts_budget_id_index": {
+          "name": "debts_budget_id_index",
+          "columns": [
+            {
+              "expression": "budget_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "debts_budget_id_budgets_id_fk": {
+          "name": "debts_budget_id_budgets_id_fk",
+          "tableFrom": "debts",
+          "tableTo": "budgets",
+          "columnsFrom": [
+            "budget_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "debts_member": {
+          "name": "debts_member",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "coinfidant_app"
+          ],
+          "using": "budget_id in (select budget_id from budget_members where user_id = app_user())",
+          "withCheck": "budget_id in (select budget_id from budget_members where user_id = app_user())"
+        }
+      },
+      "checkConstraints": {
+        "debts_amount_left": {
+          "name": "debts_amount_left",
+          "value": "\"debts\".\"amount_left\" >= 0"
+        },
+        "debts_plan_fields": {
+          "name": "debts_plan_fields",
+          "value": "(\"debts\".\"plan\" = 'oneOff' and \"debts\".\"due_date\" is not null)\n        or (\"debts\".\"plan\" = 'installments' and \"debts\".\"per_cycle\" > 0)\n        or (\"debts\".\"plan\" = 'flexible' and \"debts\".\"min_amount\" >= 0 and \"debts\".\"ideal_amount\" >= \"debts\".\"min_amount\")"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.goals": {
+      "name": "goals",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "budget_id": {
+          "name": "budget_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "emoji": {
+          "name": "emoji",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'🎯'"
+        },
+        "target": {
+          "name": "target",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "saved": {
+          "name": "saved",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "goals_budget_id_index": {
+          "name": "goals_budget_id_index",
+          "columns": [
+            {
+              "expression": "budget_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "goals_budget_id_budgets_id_fk": {
+          "name": "goals_budget_id_budgets_id_fk",
+          "tableFrom": "goals",
+          "tableTo": "budgets",
+          "columnsFrom": [
+            "budget_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "goals_member": {
+          "name": "goals_member",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "coinfidant_app"
+          ],
+          "using": "budget_id in (select budget_id from budget_members where user_id = app_user())",
+          "withCheck": "budget_id in (select budget_id from budget_members where user_id = app_user())"
+        }
+      },
+      "checkConstraints": {
+        "goals_amounts": {
+          "name": "goals_amounts",
+          "value": "\"goals\".\"target\" > 0 and \"goals\".\"saved\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.incomes": {
+      "name": "incomes",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "budget_id": {
+          "name": "budget_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "amount": {
+          "name": "amount",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'salary'"
+        }
+      },
+      "indexes": {
+        "incomes_budget_id_index": {
+          "name": "incomes_budget_id_index",
+          "columns": [
+            {
+              "expression": "budget_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "incomes_budget_id_budgets_id_fk": {
+          "name": "incomes_budget_id_budgets_id_fk",
+          "tableFrom": "incomes",
+          "tableTo": "budgets",
+          "columnsFrom": [
+            "budget_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "incomes_member": {
+          "name": "incomes_member",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "coinfidant_app"
+          ],
+          "using": "budget_id in (select budget_id from budget_members where user_id = app_user())",
+          "withCheck": "budget_id in (select budget_id from budget_members where user_id = app_user())"
+        }
+      },
+      "checkConstraints": {
+        "incomes_amount_positive": {
+          "name": "incomes_amount_positive",
+          "value": "\"incomes\".\"amount\" > 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.refresh_tokens": {
+      "name": "refresh_tokens",
+      "schema": "",
+      "columns": {
+        "token_hash": {
+          "name": "token_hash",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "family_id": {
+          "name": "family_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rotated_at": {
+          "name": "rotated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "revoked_at": {
+          "name": "revoked_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "refresh_tokens_family_id_index": {
+          "name": "refresh_tokens_family_id_index",
+          "columns": [
+            {
+              "expression": "family_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "refresh_tokens_user_id_index": {
+          "name": "refresh_tokens_user_id_index",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "refresh_tokens_user_id_users_id_fk": {
+          "name": "refresh_tokens_user_id_users_id_fk",
+          "tableFrom": "refresh_tokens",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.sinking_funds": {
+      "name": "sinking_funds",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "budget_id": {
+          "name": "budget_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "target": {
+          "name": "target",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "saved": {
+          "name": "saved",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "due_date": {
+          "name": "due_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "sinking_funds_budget_id_index": {
+          "name": "sinking_funds_budget_id_index",
+          "columns": [
+            {
+              "expression": "budget_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "sinking_funds_budget_id_budgets_id_fk": {
+          "name": "sinking_funds_budget_id_budgets_id_fk",
+          "tableFrom": "sinking_funds",
+          "tableTo": "budgets",
+          "columnsFrom": [
+            "budget_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "sinking_funds_member": {
+          "name": "sinking_funds_member",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "coinfidant_app"
+          ],
+          "using": "budget_id in (select budget_id from budget_members where user_id = app_user())",
+          "withCheck": "budget_id in (select budget_id from budget_members where user_id = app_user())"
+        }
+      },
+      "checkConstraints": {
+        "sinking_funds_amounts": {
+          "name": "sinking_funds_amounts",
+          "value": "\"sinking_funds\".\"target\" > 0 and \"sinking_funds\".\"saved\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.sweep_choices": {
+      "name": "sweep_choices",
+      "schema": "",
+      "columns": {
+        "budget_id": {
+          "name": "budget_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cycle_id": {
+          "name": "cycle_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "week_index": {
+          "name": "week_index",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "debt_id": {
+          "name": "debt_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "sweep_choices_budget_id_budgets_id_fk": {
+          "name": "sweep_choices_budget_id_budgets_id_fk",
+          "tableFrom": "sweep_choices",
+          "tableTo": "budgets",
+          "columnsFrom": [
+            "budget_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "sweep_choices_cycle_id_cycles_id_fk": {
+          "name": "sweep_choices_cycle_id_cycles_id_fk",
+          "tableFrom": "sweep_choices",
+          "tableTo": "cycles",
+          "columnsFrom": [
+            "cycle_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "sweep_choices_debt_id_debts_id_fk": {
+          "name": "sweep_choices_debt_id_debts_id_fk",
+          "tableFrom": "sweep_choices",
+          "tableTo": "debts",
+          "columnsFrom": [
+            "debt_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "sweep_choices_cycle_id_week_index_pk": {
+          "name": "sweep_choices_cycle_id_week_index_pk",
+          "columns": [
+            "cycle_id",
+            "week_index"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {
+        "sweep_choices_member": {
+          "name": "sweep_choices_member",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "coinfidant_app"
+          ],
+          "using": "budget_id in (select budget_id from budget_members where user_id = app_user())",
+          "withCheck": "budget_id in (select budget_id from budget_members where user_id = app_user())"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.transactions": {
+      "name": "transactions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "budget_id": {
+          "name": "budget_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "amount": {
+          "name": "amount",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'spend'"
+        },
+        "category_id": {
+          "name": "category_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "occurred_at": {
+          "name": "occurred_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "local_date": {
+          "name": "local_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "transactions_budget_id_local_date_index": {
+          "name": "transactions_budget_id_local_date_index",
+          "columns": [
+            {
+              "expression": "budget_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "local_date",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "transactions_budget_id_budgets_id_fk": {
+          "name": "transactions_budget_id_budgets_id_fk",
+          "tableFrom": "transactions",
+          "tableTo": "budgets",
+          "columnsFrom": [
+            "budget_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "transactions_created_by_users_id_fk": {
+          "name": "transactions_created_by_users_id_fk",
+          "tableFrom": "transactions",
+          "tableTo": "users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "transactions_category_id_categories_id_fk": {
+          "name": "transactions_category_id_categories_id_fk",
+          "tableFrom": "transactions",
+          "tableTo": "categories",
+          "columnsFrom": [
+            "category_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "transactions_member": {
+          "name": "transactions_member",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "coinfidant_app"
+          ],
+          "using": "budget_id in (select budget_id from budget_members where user_id = app_user())",
+          "withCheck": "budget_id in (select budget_id from budget_members where user_id = app_user())"
+        }
+      },
+      "checkConstraints": {
+        "transactions_amount_positive": {
+          "name": "transactions_amount_positive",
+          "value": "\"transactions\".\"amount\" > 0"
+        },
+        "transactions_type": {
+          "name": "transactions_type",
+          "value": "\"transactions\".\"type\" in ('spend', 'refund')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.users": {
+      "name": "users",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "display_name": {
+          "name": "display_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "timezone": {
+          "name": "timezone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'Africa/Lagos'"
+        },
+        "personality": {
+          "name": "personality",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'cheeky'"
+        },
+        "checkin_method": {
+          "name": "checkin_method",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'app'"
+        },
+        "leak_categories": {
+          "name": "leak_categories",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::text[]"
+        },
+        "overspend_times": {
+          "name": "overspend_times",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::text[]"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "users_email_unique": {
+          "name": "users_email_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "email"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

@@ -7,6 +7,7 @@ import request from "supertest";
 import { AppModule } from "../src/app.module";
 import { TokensService } from "../src/auth/tokens.service";
 import { UsersService } from "../src/auth/users.service";
+import { COACH_LLM, type CoachLlm, CoachLlmError } from "../src/coach/llm";
 import { CONFIG, loadConfig } from "../src/config";
 import { DB, type Db } from "../src/db/db.module";
 import { users } from "../src/db/schema";
@@ -14,7 +15,30 @@ import { configureApp } from "../src/setup";
 
 export const ORIGIN = "http://localhost:5173";
 
-export async function createTestApp() {
+/** Tests never reach a real model; each app gets a scripted one. */
+export class FakeCoach implements CoachLlm {
+  available = true;
+  calls: Parameters<CoachLlm["review"]>[] = [];
+  fail = false;
+  async review(...args: Parameters<CoachLlm["review"]>) {
+    this.calls.push(args);
+    if (this.fail) throw new CoachLlmError("coach_bad_output");
+    const n = this.calls.length;
+    return {
+      review: {
+        verdict: { label: `Read ${n}`, line: "On it." },
+        lever: "Food is the lever.",
+        target: `Keep Food under NGN\u00A0${n}0,000`,
+        observation: "Steady.",
+      },
+      model: "fake",
+      inputTokens: 100,
+      outputTokens: 50,
+    };
+  }
+}
+
+export async function createTestApp(opts: { env?: Record<string, string> } = {}) {
   const config = loadConfig({
     ...process.env,
     NODE_ENV: "test",
@@ -22,10 +46,14 @@ export async function createTestApp() {
     GOOGLE_CLIENT_ID: "test-client-id",
     GOOGLE_CLIENT_SECRET: "test-client-secret",
     GOOGLE_CALLBACK_URL: `${ORIGIN}/api/auth/google/callback`,
+    ...opts.env,
   });
+  const coach = new FakeCoach();
   const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
     .overrideProvider(CONFIG)
     .useValue(config)
+    .overrideProvider(COACH_LLM)
+    .useValue(coach)
     .compile();
   const app = configureApp(moduleRef.createNestApplication(), config) as INestApplication;
   // Listen once on IPv4 loopback. Letting supertest bind port 0 per request can pick a port that another local
@@ -40,6 +68,7 @@ export async function createTestApp() {
   return {
     app,
     db,
+    coach,
     http: () => request(base),
     users: app.get(UsersService),
     tokens: app.get(TokensService),
