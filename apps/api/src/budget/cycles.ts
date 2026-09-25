@@ -1,16 +1,29 @@
 import {
   addDays,
+  type ClosedCycle,
   closeCycle,
   computeOpenCycle,
   daysBetween,
   discoveryProgress,
+  type EngineInput,
   type ISODate,
 } from "@coinfidant/engine";
 import { BadRequestException, ConflictException, NotFoundException } from "@nestjs/common";
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { budgets, cycles, debts, sinkingFunds } from "../db/schema";
 import type { BudgetCtx } from "./budget.scope";
-import { activeCategories, engineInput, type LoadedBudget, loadBudget, openCycleOf, todayFor, userPrefs } from "./load";
+import {
+  activeCategories,
+  adjustableCycleOf,
+  cycleActivity,
+  cycleTransactions,
+  engineInput,
+  type LoadedBudget,
+  loadBudget,
+  openCycleOf,
+  todayFor,
+  userPrefs,
+} from "./load";
 
 export type Learned = {
   categories: { categoryId: string; name: string; emoji: string; monthly: number }[];
@@ -31,7 +44,7 @@ export async function todayView(ctx: BudgetCtx, now = new Date()) {
     categories: activeCategories(budget),
     budget: { paydayMode: budget.paydayMode, discovery: budget.discovery, everydayEstimate: budget.everydayEstimate },
   };
-  if (!cycle) return { ...base, cycle: null, snapshot: null, transactions: [], discovery: null };
+  if (!cycle) return { ...base, cycle: null, snapshot: null, transactions: [], discovery: null, adjustable: null };
 
   const today = todayFor(prefs.timezone, now);
   const { input, txns } = await engineInput(tx, budget, cycle, today);
@@ -51,6 +64,7 @@ export async function todayView(ctx: BudgetCtx, now = new Date()) {
     transactions: txns,
     topUps: input.topUps ?? [],
     discovery,
+    adjustable: await adjustableView(ctx),
   };
 }
 
@@ -97,13 +111,19 @@ export async function receiveSalary(ctx: BudgetCtx, body: { amount?: number; rec
     if (body.amount && body.amount !== open.salary) {
       await tx.update(cycles).set({ salary: body.amount }).where(eq(cycles.id, open.id));
     }
-    return { cycleId: open.id, closed: null, learned: null };
+    return { cycleId: open.id, closedCycleId: null, closed: null, learned: null };
   }
   if (open && receivedOn <= open.startDate) throw new ConflictException({ error: "before_open_cycle" });
 
-  let closed: ReturnType<typeof closeCycle> | null = null;
+  let closed: ClosedCycle | null = null;
   let learned: Learned | null = null;
   if (open) {
+    // The cycle before last leaves its adjustment window now.
+    await tx
+      .update(cycles)
+      .set({ status: "locked" })
+      .where(and(eq(cycles.budgetId, budgetId), eq(cycles.status, "closed")));
+
     const end = addDays(receivedOn, -1);
     const { input, txns } = await engineInput(tx, budget, open, end, end);
     closed = closeCycle(input, receivedOn);
@@ -118,6 +138,7 @@ export async function receiveSalary(ctx: BudgetCtx, body: { amount?: number; rec
         engineVersion: closed.engineVersion,
         closedAt: now,
         learned,
+        closeInput: input,
       })
       .where(eq(cycles.id, open.id));
     for (const d of closed.debts) {
@@ -152,5 +173,105 @@ export async function receiveSalary(ctx: BudgetCtx, body: { amount?: number; rec
       paydaySeenAt: budget.paydayMode ? null : now,
     })
     .returning({ id: cycles.id });
-  return { cycleId: created!.id, closed, learned };
+  return { cycleId: created!.id, closedCycleId: open?.id ?? null, closed, learned };
+}
+
+/**
+ * Re-runs a closed cycle after an edit in its adjustment window. The plan it closed on is kept; only what happened
+ * (transactions, payments, sweeps, top-ups) is re-read. Balances move by the change between old and new snapshots, so
+ * anything done since the close isn't overwritten.
+ */
+export async function reclose(ctx: BudgetCtx, cycle: NonNullable<Awaited<ReturnType<typeof adjustableCycleOf>>>) {
+  const { tx, budgetId } = ctx;
+  const stored = cycle.closeInput as EngineInput | null;
+  const before = cycle.snapshot as ClosedCycle | null;
+  if (!stored || !before || !cycle.endDate) return null;
+
+  const { activity, txns } = await cycleActivity(tx, budgetId, cycle, cycle.endDate);
+  const input: EngineInput = { ...stored, ...activity };
+  const after = closeCycle(input, addDays(cycle.endDate, 1));
+
+  for (const d of after.debts) {
+    const delta = d.amountLeft - (before.debts.find((x) => x.id === d.id)?.amountLeft ?? d.amountLeft);
+    if (!delta) continue;
+    await tx
+      .update(debts)
+      .set({ amountLeft: sql`greatest(0, ${debts.amountLeft} + ${delta})` })
+      .where(and(eq(debts.id, d.id), eq(debts.budgetId, budgetId)));
+  }
+
+  let learned = cycle.learned as Learned | null;
+  if (learned) {
+    const budget = await loadBudget(tx, budgetId);
+    learned = learnedFrom(budget!, txns, cycle.startDate, cycle.endDate);
+    await tx
+      .update(budgets)
+      .set({ everydayEstimate: learned.total > 0 ? learned.total : null })
+      .where(eq(budgets.id, budgetId));
+  }
+
+  await tx
+    .update(cycles)
+    .set({ snapshot: after, engineVersion: after.engineVersion, closeInput: input, learned })
+    .where(eq(cycles.id, cycle.id));
+  return after;
+}
+
+/** The last closed cycle's entries while they can still be edited. */
+export async function adjustableView(ctx: BudgetCtx) {
+  const cycle = await adjustableCycleOf(ctx.tx, ctx.budgetId);
+  if (!cycle?.endDate) return null;
+  return {
+    cycleId: cycle.id,
+    startDate: cycle.startDate,
+    endDate: cycle.endDate,
+    transactions: await cycleTransactions(ctx.tx, ctx.budgetId, cycle.startDate, cycle.endDate),
+  };
+}
+
+export async function historyView(ctx: BudgetCtx) {
+  const rows = await ctx.tx
+    .select({
+      id: cycles.id,
+      startDate: cycles.startDate,
+      endDate: cycles.endDate,
+      status: cycles.status,
+      snapshot: cycles.snapshot,
+    })
+    .from(cycles)
+    .where(and(eq(cycles.budgetId, ctx.budgetId), inArray(cycles.status, ["closed", "locked"])))
+    .orderBy(desc(cycles.startDate))
+    .limit(24);
+  return rows.map((r) => {
+    const s = r.snapshot as ClosedCycle;
+    return {
+      id: r.id,
+      startDate: r.startDate,
+      endDate: r.endDate,
+      status: r.status,
+      savingsRateBp: s.savingsRateBp,
+      saved: s.savings.net,
+      spent: s.spent,
+    };
+  });
+}
+
+export async function closedCycleView(ctx: BudgetCtx, id: string) {
+  const [row] = await ctx.tx
+    .select()
+    .from(cycles)
+    .where(and(eq(cycles.id, id), eq(cycles.budgetId, ctx.budgetId), inArray(cycles.status, ["closed", "locked"])));
+  if (!row) throw new NotFoundException({ error: "not_found" });
+  const budget = await loadBudget(ctx.tx, ctx.budgetId);
+  const s = row.snapshot as ClosedCycle;
+  const name = (debtId: string) => budget!.debts.find((d) => d.id === debtId)?.name ?? "A debt";
+  return {
+    id: row.id,
+    status: row.status,
+    startDate: row.startDate,
+    endDate: row.endDate,
+    snapshot: s,
+    pendingDebts: s.debts.filter((d) => d.unpaid > 0).map((d) => ({ ...d, name: name(d.id) })),
+    sweptToDebts: s.savings.sweptToDebts.map((d) => ({ ...d, name: name(d.debtId) })),
+  };
 }

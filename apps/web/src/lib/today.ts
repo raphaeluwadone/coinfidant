@@ -24,6 +24,8 @@ export type TodayData = {
   transactions: TxnRow[];
   topUps?: { id: string; amount: Minor }[];
   discovery: DiscoveryProgress | null;
+  /** The last closed cycle's entries, editable until the next salary lands. */
+  adjustable: { cycleId: string; startDate: ISODate; endDate: ISODate; transactions: TxnRow[] } | null;
 };
 
 /** The Payday flow is owed when Payday mode is on and this cycle hasn't shown it yet. */

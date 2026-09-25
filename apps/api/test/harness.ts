@@ -28,7 +28,11 @@ export async function createTestApp() {
     .useValue(config)
     .compile();
   const app = configureApp(moduleRef.createNestApplication(), config) as INestApplication;
-  await app.init();
+  // Listen once on IPv4 loopback. Letting supertest bind port 0 per request can pick a port that another local
+  // process (e.g. an editor's WebSocket server) already holds on 127.0.0.1, which answers 426.
+  await app.listen(0, "127.0.0.1");
+  const { port } = app.getHttpServer().address() as { port: number };
+  const base = `http://127.0.0.1:${port}`;
 
   const emails: string[] = [];
   const db = app.get<Db>(DB);
@@ -36,7 +40,7 @@ export async function createTestApp() {
   return {
     app,
     db,
-    http: () => request(app.getHttpServer()),
+    http: () => request(base),
     users: app.get(UsersService),
     tokens: app.get(TokensService),
 

@@ -240,11 +240,11 @@ describe("salary received", () => {
     });
   });
 
-  it("closed-cycle transactions can't be edited yet", async () => {
+  it("the just-closed cycle stays editable until the next close", async () => {
     const { api, food } = await freshBudget(5);
     const { body } = await api.post("/api/transactions", { amount: 1, categoryId: food, date: addDays(today(), -2) });
     await api.post("/api/cycles/salary", {});
-    expect((await api.del(`/api/transactions/${body.transaction.id}`)).body).toEqual({ error: "cycle_closed" });
+    expect((await api.del(`/api/transactions/${body.transaction.id}`)).status).toBe(200);
   });
 });
 

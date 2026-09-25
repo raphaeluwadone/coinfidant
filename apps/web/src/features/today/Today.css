@@ -479,3 +479,8 @@
   font-weight: 600;
   color: var(--text-soft);
 }
+
+.week__links {
+  display: flex;
+  gap: 18px;
+}

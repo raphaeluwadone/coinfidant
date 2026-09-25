@@ -276,6 +276,8 @@ export const cycles = pgTable(
     paydaySeenAt: timestamp("payday_seen_at", { withTimezone: true }),
     // Discovery results, stored on the cycle that did the learning.
     learned: jsonb("learned"),
+    // The engine input the close ran on, so edits in the adjustment window can re-run exactly that close.
+    closeInput: jsonb("close_input"),
     createdAt: createdAt(),
   },
   (t) => [

@@ -14,7 +14,10 @@ export type Learned = {
 };
 
 export const markSalaryReceived = (input: { amount?: number; receivedOn?: string } = {}) =>
-  api<{ today: TodayData; learned: Learned | null }>("/cycles/salary", { method: "POST", json: input });
+  api<{ today: TodayData; learned: Learned | null; closedCycleId: string | null }>("/cycles/salary", {
+    method: "POST",
+    json: input,
+  });
 
 export const markPaydaySeen = () => api<void>("/cycles/current/payday-seen", { method: "POST" });
 

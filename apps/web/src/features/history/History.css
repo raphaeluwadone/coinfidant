@@ -1,0 +1,128 @@
+.history {
+  max-width: 720px;
+  margin: 0 auto;
+  display: grid;
+  gap: 18px;
+  align-content: start;
+}
+.history h1 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.history__tabs {
+  display: flex;
+  gap: 8px;
+}
+.history__tabs button {
+  padding: 8px 14px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  color: var(--text-soft);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.history__tabs button.is-on {
+  background: var(--accent-text);
+  color: var(--fab-text);
+  font-weight: 700;
+}
+
+.history__label {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.history__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-radius: 14px;
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.05);
+  animation: fade-up 0.5s var(--ease) both;
+}
+.history__list > li + li {
+  border-top: 1px solid var(--border);
+}
+.history__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+}
+.history__row--link {
+  color: inherit;
+  text-decoration: none;
+}
+.history__row--link:hover {
+  background: var(--surface-2);
+}
+.history__main {
+  flex: 1;
+  min-width: 0;
+}
+.history__title {
+  font-size: 14px;
+  font-weight: 700;
+}
+.history__line {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent-text);
+}
+.history__line.is-good,
+.history__rate,
+.history__stat-value.is-good {
+  color: var(--success);
+}
+.history__line.is-over {
+  color: var(--warn);
+}
+.history__right {
+  font-size: 14px;
+  font-weight: 700;
+  text-align: right;
+  white-space: nowrap;
+}
+.history__right span {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+.history__rate {
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.history__stats {
+  display: flex;
+  gap: 10px;
+}
+.history__stat {
+  flex: 1;
+  padding: 14px;
+}
+.history__stat-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.history__stat-value {
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.history__empty {
+  margin: 8vh 0 0;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-soft);
+}

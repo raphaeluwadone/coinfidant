@@ -1,4 +1,5 @@
 import { idParam, transactionInput, transactionPatch } from "@coinfidant/contracts";
+import type { ISODate } from "@coinfidant/engine";
 import {
   BadRequestException,
   Body,
@@ -18,23 +19,35 @@ import { UserId } from "../auth/auth.guard";
 import { ZodPipe } from "../common/zod.pipe";
 import { transactions } from "../db/schema";
 import { type BudgetCtx, BudgetScope } from "./budget.scope";
-import { todayView } from "./cycles";
-import { isActiveCategory, loadBudget, openCycleOf, todayFor, userPrefs } from "./load";
+import { reclose, todayView } from "./cycles";
+import { adjustableCycleOf, isActiveCategory, loadBudget, openCycleOf, todayFor, userPrefs } from "./load";
 
 type Id = z.output<typeof idParam>;
 
-/** The open cycle and today's date; transactions may only be dated inside that window. */
-async function window({ tx, userId, budgetId }: BudgetCtx) {
-  const [budget, cycle, prefs] = await Promise.all([
+/**
+ * Transactions may be dated from the start of the last closed cycle (its adjustment window) up to today.
+ * Anything older belongs to a locked cycle.
+ */
+async function window(ctx: BudgetCtx) {
+  const { tx, userId, budgetId } = ctx;
+  const [budget, open, adjustable, prefs] = await Promise.all([
     loadBudget(tx, budgetId),
     openCycleOf(tx, budgetId),
+    adjustableCycleOf(tx, budgetId),
     userPrefs(tx, userId),
   ]);
-  if (!budget || !cycle) throw new ConflictException({ error: "no_open_cycle" });
-  return { budget, cycle, timezone: prefs.timezone, today: todayFor(prefs.timezone) };
+  if (!budget || !open) throw new ConflictException({ error: "no_open_cycle" });
+  const today = todayFor(prefs.timezone);
+  const from = adjustable?.startDate ?? open.startDate;
+  const inWindow = (d: ISODate) => d >= from && d <= today;
+  const inClosed = (d: ISODate) => !!adjustable?.endDate && d >= adjustable.startDate && d <= adjustable.endDate;
+  // Re-running the close keeps the stored snapshot true to the edited entries.
+  const recloseIf = async (...dates: ISODate[]) => {
+    if (adjustable && dates.some(inClosed)) await reclose(ctx, adjustable);
+  };
+  return { budget, today, inWindow, recloseIf, from };
 }
 
-// TODO(M5): allow edits in the just-closed cycle during its adjustment window.
 @Controller("transactions")
 export class TransactionsController {
   constructor(@Inject(BudgetScope) private readonly scope: BudgetScope) {}
@@ -43,9 +56,9 @@ export class TransactionsController {
   @HttpCode(201)
   create(@UserId() userId: string, @Body(new ZodPipe(transactionInput)) body: z.output<typeof transactionInput>) {
     return this.scope.run(userId, async (ctx) => {
-      const { budget, cycle, today } = await window(ctx);
+      const { budget, today, inWindow, recloseIf } = await window(ctx);
       const date = body.date ?? today;
-      if (date < cycle.startDate || date > today) throw new BadRequestException({ error: "date_outside_cycle" });
+      if (!inWindow(date)) throw new BadRequestException({ error: "date_outside_cycle" });
       if (!isActiveCategory(budget, body.categoryId)) throw new BadRequestException({ error: "unknown_category" });
 
       // Back-dated entries keep their date; noon avoids them landing on another day in the user's timezone.
@@ -63,6 +76,7 @@ export class TransactionsController {
           localDate: date,
         })
         .returning();
+      await recloseIf(date);
       return { transaction, today: await todayView(ctx) };
     });
   }
@@ -75,11 +89,9 @@ export class TransactionsController {
   ) {
     if (!Object.keys(body).length) throw new BadRequestException({ error: "empty_update" });
     return this.scope.run(userId, async (ctx) => {
-      const { budget, cycle, today } = await window(ctx);
-      const existing = await this.inOpenCycle(ctx, id, cycle.startDate);
-      if (body.date && (body.date < cycle.startDate || body.date > today)) {
-        throw new BadRequestException({ error: "date_outside_cycle" });
-      }
+      const { budget, inWindow, recloseIf, from } = await window(ctx);
+      const existing = await this.editable(ctx, id, from);
+      if (body.date && !inWindow(body.date)) throw new BadRequestException({ error: "date_outside_cycle" });
       if (body.categoryId && !isActiveCategory(budget, body.categoryId)) {
         throw new BadRequestException({ error: "unknown_category" });
       }
@@ -88,6 +100,7 @@ export class TransactionsController {
         .update(transactions)
         .set({ ...rest, ...(date && date !== existing.localDate ? { localDate: date } : {}) })
         .where(and(eq(transactions.id, id), eq(transactions.budgetId, ctx.budgetId)));
+      await recloseIf(existing.localDate, date ?? existing.localDate);
       return todayView(ctx);
     });
   }
@@ -95,20 +108,21 @@ export class TransactionsController {
   @Delete(":id")
   remove(@UserId() userId: string, @Param(new ZodPipe(idParam)) { id }: Id) {
     return this.scope.run(userId, async (ctx) => {
-      const { cycle } = await window(ctx);
-      await this.inOpenCycle(ctx, id, cycle.startDate);
+      const { recloseIf, from } = await window(ctx);
+      const existing = await this.editable(ctx, id, from);
       await ctx.tx.delete(transactions).where(and(eq(transactions.id, id), eq(transactions.budgetId, ctx.budgetId)));
+      await recloseIf(existing.localDate);
       return { today: await todayView(ctx) };
     });
   }
 
-  private async inOpenCycle({ tx, budgetId }: BudgetCtx, id: string, cycleStart: string) {
+  private async editable({ tx, budgetId }: BudgetCtx, id: string, from: ISODate) {
     const [row] = await tx
       .select()
       .from(transactions)
       .where(and(eq(transactions.id, id), eq(transactions.budgetId, budgetId)));
     if (!row) throw new NotFoundException({ error: "not_found" });
-    if (row.localDate < cycleStart) throw new ConflictException({ error: "cycle_closed" });
+    if (row.localDate < from) throw new ConflictException({ error: "cycle_locked" });
     return row;
   }
 }

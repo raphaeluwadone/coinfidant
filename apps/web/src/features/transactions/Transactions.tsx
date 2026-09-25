@@ -45,6 +45,7 @@ export function Transactions() {
 
   if (isPending || !data) return <div className="txns" aria-busy="true" />;
   const visible = data.transactions.filter((t) => !hidden.has(t.id));
+  const lastCycle = (data.adjustable?.transactions ?? []).filter((t) => !hidden.has(t.id));
   const today = data.snapshot?.today.date;
 
   return (
@@ -56,11 +57,19 @@ export function Transactions() {
         </Link>
       </header>
 
-      {visible.length === 0 ? (
+      {visible.length === 0 && lastCycle.length === 0 ? (
         <Empty />
       ) : (
         <div className="txns__grid">
-          <DayGroups data={data} txns={visible} today={today} onDelete={remove} />
+          <div className="txns__days">
+            <DayGroups data={data} txns={visible} today={today} onDelete={remove} />
+            {lastCycle.length > 0 && (
+              <>
+                <h2 className="txns__cyclehead">LAST CYCLE · editable until your next payday</h2>
+                <DayGroups data={data} txns={lastCycle} today={today} onDelete={remove} />
+              </>
+            )}
+          </div>
           {data.snapshot && (
             <WeekByCategory txns={visible} weekStart={data.snapshot.today.week.start} currency={data.currency} />
           )}

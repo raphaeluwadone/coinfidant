@@ -30,7 +30,7 @@ import { ScopedDb, type Tx } from "../db/db.module";
 import { bills, budgets, commitments, cycles, cycleTopUps, debts, incomes, sweepChoices, users } from "../db/schema";
 import { BudgetScope, findBudgetId } from "./budget.scope";
 import { createBudget } from "./create";
-import { receiveSalary, todayView } from "./cycles";
+import { closedCycleView, historyView, receiveSalary, todayView } from "./cycles";
 import { loadBudget, openCycleOf, userPrefs } from "./load";
 
 type Setup = z.output<typeof setupInput>;
@@ -96,9 +96,19 @@ export class BudgetController {
   @HttpCode(201)
   salary(@UserId() userId: string, @Body(new ZodPipe(salaryInput)) body: z.output<typeof salaryInput>) {
     return this.scope.run(userId, async (ctx) => {
-      const { closed, learned } = await receiveSalary(ctx, body);
-      return { closed, learned, today: await todayView(ctx) };
+      const { closed, closedCycleId, learned } = await receiveSalary(ctx, body);
+      return { closed, closedCycleId, learned, today: await todayView(ctx) };
     });
+  }
+
+  @Get("cycles/history")
+  history(@UserId() userId: string) {
+    return this.scope.run(userId, async (ctx) => ({ cycles: await historyView(ctx) }));
+  }
+
+  @Get("cycles/:id")
+  cycle(@UserId() userId: string, @Param(new ZodPipe(idParam)) { id }: z.output<typeof idParam>) {
+    return this.scope.run(userId, (ctx) => closedCycleView(ctx, id));
   }
 
   @Post("cycles/current/payday-seen")

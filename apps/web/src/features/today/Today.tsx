@@ -138,9 +138,14 @@ function TodayView({ data, snapshot: s, user }: { data: TodayData; snapshot: Ope
               </li>
             ))}
           </ul>
-          <Link to="/transactions" className="link-btn week__all">
-            See transactions →
-          </Link>
+          <div className="week__links">
+            <Link to="/transactions" className="link-btn week__all">
+              See transactions →
+            </Link>
+            <Link to="/history" className="link-btn week__all">
+              History →
+            </Link>
+          </div>
         </section>
 
         <StatusChips snapshot={s} currency={currency} className="chips chips--mobile" />
@@ -250,10 +255,10 @@ function SalaryPrompt({ compact = false, overdue = false }: { compact?: boolean;
     onSuccess: async (res) => {
       qc.setQueryData(todayQuery.queryKey, res.today);
       await qc.invalidateQueries({ queryKey: ["budget"] });
-      if (res.learned) {
-        qc.setQueryData(learnedQueryKey, res.learned);
-        navigate({ to: "/discovery/complete" });
-      } else if (paydayDue(res.today)) navigate({ to: "/payday" });
+      qc.setQueryData(learnedQueryKey, res.learned);
+      await qc.invalidateQueries({ queryKey: ["history"] });
+      if (res.closedCycleId) navigate({ to: "/cycles/$id", params: { id: res.closedCycleId }, search: { flow: true } });
+      else if (paydayDue(res.today)) navigate({ to: "/payday" });
     },
   });
   return (

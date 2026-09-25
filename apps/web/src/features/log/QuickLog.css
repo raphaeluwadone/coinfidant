@@ -249,3 +249,22 @@
     min-height: 560px;
   }
 }
+
+.log__when {
+  display: flex;
+  justify-content: center;
+  margin: -6px 0 14px;
+}
+.log__date-chip {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--text-soft);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.log__date {
+  height: 36px;
+}

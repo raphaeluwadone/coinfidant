@@ -1,0 +1,1 @@
+ALTER TABLE "cycles" ADD COLUMN "close_input" jsonb;

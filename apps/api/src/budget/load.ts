@@ -6,7 +6,7 @@ import {
   type SweepChoice,
   type WeekStart,
 } from "@coinfidant/engine";
-import { and, asc, between, eq } from "drizzle-orm";
+import { and, asc, between, desc, eq } from "drizzle-orm";
 import type { Tx } from "../db/db.module";
 import {
   bills,
@@ -111,6 +111,41 @@ const debtPlan = (d: LoadedBudget["debts"][number]): Debt["plan"] => {
   }
 };
 
+/** What happened during a cycle up to `to`: the parts of the engine input that change as you log. */
+export async function cycleActivity(tx: Tx, budgetId: string, cycle: Pick<CycleRow, "id" | "startDate">, to: ISODate) {
+  const [txns, payments, sweeps, topUps] = await Promise.all([
+    cycleTransactions(tx, budgetId, cycle.startDate, to),
+    tx
+      .select()
+      .from(debtPayments)
+      .where(and(eq(debtPayments.budgetId, budgetId), eq(debtPayments.cycleId, cycle.id))),
+    tx
+      .select()
+      .from(sweepChoices)
+      .where(and(eq(sweepChoices.budgetId, budgetId), eq(sweepChoices.cycleId, cycle.id))),
+    tx
+      .select()
+      .from(cycleTopUps)
+      .where(and(eq(cycleTopUps.budgetId, budgetId), eq(cycleTopUps.cycleId, cycle.id))),
+  ]);
+
+  const sweepMap: Record<number, SweepChoice> = {};
+  for (const s of sweeps) sweepMap[s.weekIndex] = s.debtId ? { to: "debt", debtId: s.debtId } : { to: "savings" };
+
+  const activity: Pick<EngineInput, "transactions" | "sweepChoices" | "debtPayments" | "topUps"> = {
+    transactions: txns.map((t) => ({
+      id: t.id,
+      amount: t.amount,
+      date: t.localDate,
+      type: t.type as "spend" | "refund",
+    })),
+    sweepChoices: sweepMap,
+    debtPayments: payments.map((p) => ({ debtId: p.debtId, amount: p.amount })),
+    topUps: topUps.map((t) => ({ id: t.itemId, amount: t.amount })),
+  };
+  return { activity, txns };
+}
+
 /** Everything the engine needs for one cycle, read from the database. */
 export async function engineInput(
   tx: Tx,
@@ -119,25 +154,7 @@ export async function engineInput(
   today: ISODate,
   lastDay: ISODate = today,
 ): Promise<{ input: EngineInput; txns: Awaited<ReturnType<typeof cycleTransactions>> }> {
-  const [txns, payments, sweeps, topUps] = await Promise.all([
-    cycleTransactions(tx, budget.id, cycle.startDate, lastDay),
-    tx
-      .select()
-      .from(debtPayments)
-      .where(and(eq(debtPayments.budgetId, budget.id), eq(debtPayments.cycleId, cycle.id))),
-    tx
-      .select()
-      .from(sweepChoices)
-      .where(and(eq(sweepChoices.budgetId, budget.id), eq(sweepChoices.cycleId, cycle.id))),
-    tx
-      .select()
-      .from(cycleTopUps)
-      .where(and(eq(cycleTopUps.budgetId, budget.id), eq(cycleTopUps.cycleId, cycle.id))),
-  ]);
-
-  const sweepMap: Record<number, SweepChoice> = {};
-  for (const s of sweeps) sweepMap[s.weekIndex] = s.debtId ? { to: "debt", debtId: s.debtId } : { to: "savings" };
-
+  const { activity, txns } = await cycleActivity(tx, budget.id, cycle, lastDay);
   const input: EngineInput = {
     today,
     settings: {
@@ -167,18 +184,20 @@ export async function engineInput(
       plan: debtPlan(d),
     })),
     commitments: budget.commitments.map((c) => ({ id: c.id, name: c.name, min: c.minAmount, ideal: c.idealAmount })),
-    transactions: txns.map((t) => ({
-      id: t.id,
-      amount: t.amount,
-      date: t.localDate,
-      type: t.type as "spend" | "refund",
-    })),
-    sweepChoices: sweepMap,
-    debtPayments: payments.map((p) => ({ debtId: p.debtId, amount: p.amount })),
-    topUps: topUps.map((t) => ({ id: t.itemId, amount: t.amount })),
+    ...activity,
   };
   return { input, txns };
 }
+
+/** The most recent closed cycle, which stays editable until the next one closes. */
+export const adjustableCycleOf = (tx: Tx, budgetId: string) =>
+  tx
+    .select()
+    .from(cycles)
+    .where(and(eq(cycles.budgetId, budgetId), eq(cycles.status, "closed")))
+    .orderBy(desc(cycles.startDate))
+    .limit(1)
+    .then((r) => r[0] ?? null);
 
 export const todayFor = (timezone: string, now = new Date()) => localDate(now, timezone);
 

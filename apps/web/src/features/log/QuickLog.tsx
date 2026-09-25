@@ -22,6 +22,11 @@ export function QuickLog() {
   const [picked, setCategory] = useState<string | null>(null);
   const category = picked ?? categories[0]?.id ?? null;
   const [note, setNote] = useState<string | undefined>();
+  const [date, setDate] = useState<string | null>(null);
+  const [pickingDate, setPickingDate] = useState(false);
+  const today = data?.snapshot?.today.date;
+  // Back-dating reaches into the last closed cycle while its adjustment window is open.
+  const earliest = data?.adjustable?.startDate ?? data?.cycle?.startDate;
   const [saved, setSaved] = useState<Saved | null>(null);
 
   const currency = data?.currency ?? "NGN";
@@ -45,8 +50,9 @@ export function QuickLog() {
   });
 
   const submit = useCallback(() => {
-    if (amount > 0 && category && !save.isPending) save.mutate({ amount, categoryId: category, note });
-  }, [amount, category, note, save]);
+    if (amount > 0 && category && !save.isPending)
+      save.mutate({ amount, categoryId: category, note, ...(date && date !== today ? { date } : {}) });
+  }, [amount, category, note, save, date, today]);
 
   const tap = useCallback((key: Key) => {
     setValue((v) => press(v, key));
@@ -56,7 +62,7 @@ export function QuickLog() {
   useEffect(() => {
     if (saved) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.metaKey || e.ctrlKey || e.altKey || e.target instanceof HTMLInputElement) return;
       if (/^[0-9.]$/.test(e.key)) tap(e.key as Key);
       else if (e.key === "Backspace") tap("back");
       else if (e.key === "Enter") submit();
@@ -91,6 +97,26 @@ export function QuickLog() {
       >
         {currency}&nbsp;{int ? fmt.format(Number(int)) : "0"}
         {frac !== undefined && <span className="log__frac">.{frac}</span>}
+      </div>
+
+      <div className="log__when">
+        {pickingDate && today && earliest ? (
+          <input
+            className="text-input log__date"
+            type="date"
+            min={earliest}
+            max={today}
+            value={date ?? today}
+            onChange={(e) => e.target.value && setDate(e.target.value)}
+            onBlur={() => setPickingDate(false)}
+            aria-label="Date"
+            autoFocus
+          />
+        ) : (
+          <button type="button" className="log__date-chip" onClick={() => setPickingDate(true)}>
+            📅 {!date || date === today ? "Today" : dayName(date)}
+          </button>
+        )}
       </div>
 
       <div className="log__chips" role="radiogroup" aria-label="Category">
@@ -234,3 +260,11 @@ function frequentSpends(txns: TxnRow[]) {
     .sort((a, b) => b.count - a.count || b.last.localeCompare(a.last))
     .slice(0, 3);
 }
+
+const dayName = (d: string) =>
+  new Date(`${d}T00:00:00Z`).toLocaleDateString("en-GB", {
+    timeZone: "UTC",
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  });

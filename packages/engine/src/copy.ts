@@ -1,4 +1,4 @@
-import type { OpenCycle } from "./types";
+import type { OpenCycle, WeekOutcome } from "./types";
 
 export type Tone = "gentle" | "cheeky" | "unhinged";
 
@@ -124,3 +124,23 @@ export function paceStatus(s: OpenCycle): PaceStatus {
 }
 
 export const PACE_LABEL: Record<PaceStatus, string> = { onTrack: "On track", slowDown: "Slow down", over: "Over" };
+
+const SWEPT_LINES: Record<Tone, string> = {
+  gentle: "✅ Under budget. Nice week.",
+  cheeky: "✅ Steady Eddie week",
+  unhinged: "✅ ABSOLUTE UNIT OF A WEEK 💪🔥",
+};
+
+const SPREAD_LINES: Record<Tone, string> = {
+  gentle: "Over, and spread across the next weeks",
+  cheeky: "🌶️ Spicy week, smoothed out",
+  unhinged: "🌶️ WEEK WENT FERAL. Future weeks covered it 🦎",
+};
+
+/** History's one-liner for a finished week. Borrowing from savings gets the calm voice at every level. */
+export function weekLine(outcome: WeekOutcome | undefined, tone: Tone, formatted: (n: number) => string): string {
+  if (!outcome) return "";
+  if (outcome.kind === "swept") return SWEPT_LINES[tone];
+  if (outcome.floorHit) return `🫣 Floor hit, borrowed ${formatted(outcome.borrowed)} from savings`;
+  return SPREAD_LINES[tone];
+}
