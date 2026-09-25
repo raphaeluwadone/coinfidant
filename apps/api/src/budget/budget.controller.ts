@@ -1,20 +1,35 @@
 import {
+  idParam,
   preferencesInput,
   salaryInput,
   settingsInput,
   setupInput,
   sweepChoiceInput,
+  topUpInput,
   weekParam,
 } from "@coinfidant/contracts";
-import { CATEGORIES, cycleStartFor, localDate } from "@coinfidant/engine";
-import { Body, Controller, Get, HttpCode, Inject, NotFoundException, Param, Patch, Post, Put } from "@nestjs/common";
-import { and, eq } from "drizzle-orm";
+import { cycleStartFor, localDate } from "@coinfidant/engine";
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Inject,
+  NotFoundException,
+  Param,
+  Patch,
+  Post,
+  Put,
+} from "@nestjs/common";
+import { and, eq, isNull } from "drizzle-orm";
 import type { z } from "zod";
 import { UserId } from "../auth/auth.guard";
 import { ZodPipe } from "../common/zod.pipe";
 import { ScopedDb, type Tx } from "../db/db.module";
-import { bills, budgetMembers, budgets, categories, cycles, debts, incomes, sweepChoices, users } from "../db/schema";
+import { bills, budgets, commitments, cycles, cycleTopUps, debts, incomes, sweepChoices, users } from "../db/schema";
 import { BudgetScope, findBudgetId } from "./budget.scope";
+import { createBudget } from "./create";
 import { receiveSalary, todayView } from "./cycles";
 import { loadBudget, openCycleOf, userPrefs } from "./load";
 
@@ -48,7 +63,9 @@ export class BudgetController {
       if (!(await openCycleOf(tx, budgetId))) {
         const { timezone } = await userPrefs(tx, userId);
         const start = body.lastSalaryOn ?? cycleStartFor(localDate(new Date(), timezone), body.expectedPayday);
-        await tx.insert(cycles).values({ budgetId, startDate: start, salary: body.salary, status: "open" });
+        await tx
+          .insert(cycles)
+          .values({ budgetId, startDate: start, salary: body.salary, status: "open", paydaySeenAt: new Date() });
       }
       return { budget: await loadBudget(tx, budgetId), openCycle: await openCycleOf(tx, budgetId) };
     });
@@ -79,8 +96,59 @@ export class BudgetController {
   @HttpCode(201)
   salary(@UserId() userId: string, @Body(new ZodPipe(salaryInput)) body: z.output<typeof salaryInput>) {
     return this.scope.run(userId, async (ctx) => {
-      const { closed } = await receiveSalary(ctx, body);
-      return { closed, today: await todayView(ctx) };
+      const { closed, learned } = await receiveSalary(ctx, body);
+      return { closed, learned, today: await todayView(ctx) };
+    });
+  }
+
+  @Post("cycles/current/payday-seen")
+  @HttpCode(204)
+  paydaySeen(@UserId() userId: string) {
+    return this.scope.run(userId, async ({ tx, budgetId }) => {
+      await tx
+        .update(cycles)
+        .set({ paydaySeenAt: new Date() })
+        .where(and(eq(cycles.budgetId, budgetId), eq(cycles.status, "open"), isNull(cycles.paydaySeenAt)));
+    });
+  }
+
+  /** R24: accept a top-up toward a supported person's or flexible debt's ideal for this cycle; 0 removes it. */
+  @Put("cycles/current/top-ups/:id")
+  topUp(
+    @UserId() userId: string,
+    @Param(new ZodPipe(idParam)) { id }: z.output<typeof idParam>,
+    @Body(new ZodPipe(topUpInput)) { amount }: z.output<typeof topUpInput>,
+  ) {
+    return this.scope.run(userId, async (ctx) => {
+      const { tx, budgetId } = ctx;
+      const cycle = await openCycleOf(tx, budgetId);
+      if (!cycle) throw new NotFoundException({ error: "no_open_cycle" });
+
+      const [commitment] = await tx
+        .select()
+        .from(commitments)
+        .where(and(eq(commitments.id, id), eq(commitments.budgetId, budgetId)));
+      const [debt] = commitment
+        ? []
+        : await tx
+            .select()
+            .from(debts)
+            .where(and(eq(debts.id, id), eq(debts.budgetId, budgetId), eq(debts.plan, "flexible")));
+      if (!commitment && !debt) throw new NotFoundException({ error: "not_found" });
+
+      const gap = commitment
+        ? commitment.idealAmount - commitment.minAmount
+        : Math.min(debt!.idealAmount ?? 0, debt!.amountLeft) - Math.min(debt!.minAmount ?? 0, debt!.amountLeft);
+      if (amount > gap) throw new BadRequestException({ error: "above_ideal", max: Math.max(0, gap) });
+
+      const where = and(eq(cycleTopUps.cycleId, cycle.id), eq(cycleTopUps.itemId, id));
+      if (amount === 0) await tx.delete(cycleTopUps).where(where);
+      else
+        await tx
+          .insert(cycleTopUps)
+          .values({ budgetId, cycleId: cycle.id, itemKind: commitment ? "commitment" : "debt", itemId: id, amount })
+          .onConflictDoUpdate({ target: [cycleTopUps.cycleId, cycleTopUps.itemId], set: { amount } });
+      return todayView(ctx);
     });
   }
 
@@ -109,26 +177,6 @@ export class BudgetController {
       return todayView(ctx);
     });
   }
-}
-
-async function createBudget(tx: Tx, userId: string, body: Setup) {
-  const [budget] = await tx
-    .insert(budgets)
-    .values({
-      ownerId: userId,
-      currency: body.currency,
-      savingsPercent: body.savingsPercent,
-      expectedPayday: body.expectedPayday,
-    })
-    .returning({ id: budgets.id });
-  const budgetId = budget!.id;
-  await tx.insert(budgetMembers).values({ budgetId, userId, role: "owner" });
-  await tx.insert(incomes).values({ budgetId, name: "Salary", amount: body.salary, kind: "salary" });
-  await tx
-    .insert(categories)
-    .values(CATEGORIES.map((c, position) => ({ budgetId, name: c.label, emoji: c.emoji, slug: c.key, position })));
-  if (body.bills.length) await tx.insert(bills).values(body.bills.map((b) => ({ ...b, budgetId })));
-  return budgetId;
 }
 
 async function updateBasics(tx: Tx, budgetId: string, body: Setup) {

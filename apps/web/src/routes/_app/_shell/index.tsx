@@ -1,9 +1,12 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { Today } from "../../../features/today/Today";
-import { todayQuery } from "../../../lib/today";
+import { paydayDue, todayQuery } from "../../../lib/today";
 
 export const Route = createFileRoute("/_app/_shell/")({
-  loader: ({ context }) => context.queryClient.prefetchQuery(todayQuery),
+  loader: async ({ context }) => {
+    const data = await context.queryClient.ensureQueryData(todayQuery);
+    if (paydayDue(data)) throw redirect({ to: "/payday" });
+  },
   component: TodayPage,
 });
 

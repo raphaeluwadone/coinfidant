@@ -2,8 +2,19 @@ import { spreadDeficit } from "./alloc";
 import { dayOfWeek, projectedEnd, splitWeeks } from "./calendar";
 import { addDays, daysBetween, type ISODate } from "./date";
 import type { Minor } from "./money";
+import { attackOrder } from "./phase";
 import { computePlan } from "./plan";
-import type { ClosedCycle, DayCell, DayState, EngineEvent, EngineInput, OpenCycle, Savings, Week } from "./types";
+import type {
+  ClosedCycle,
+  DayCell,
+  DayState,
+  EngineEvent,
+  EngineInput,
+  OpenCycle,
+  Savings,
+  SweepChoice,
+  Week,
+} from "./types";
 
 export const ENGINE_VERSION = "1.0.0";
 
@@ -50,6 +61,8 @@ function settleWeeks(input: EngineInput, projEnd: ISODate, flexible: Minor, last
 
   const events: EngineEvent[] = [];
   const debtIds = new Set(input.debts.map((d) => d.id));
+  const target = input.settings.leftoverDefault === "debts" ? attackOrder(input.debts)[0] : undefined;
+  const fallback: SweepChoice = target ? { to: "debt", debtId: target.id } : { to: "savings" };
   const sweptToDebts = new Map<string, Minor>();
   let swept = 0;
   let borrowed = 0;
@@ -58,7 +71,7 @@ function settleWeeks(input: EngineInput, projEnd: ISODate, flexible: Minor, last
     if (week.status !== "past") break;
     if (week.spent <= week.budget) {
       const amount = week.budget - week.spent;
-      const choice = input.sweepChoices[week.index];
+      const choice = input.sweepChoices[week.index] ?? fallback;
       if (choice?.to === "debt" && debtIds.has(choice.debtId)) {
         sweptToDebts.set(choice.debtId, (sweptToDebts.get(choice.debtId) ?? 0) + amount);
         week.outcome = { kind: "swept", amount, to: { debtId: choice.debtId } };

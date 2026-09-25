@@ -26,3 +26,13 @@ export function localDate(instant: Date, timeZone: string): ISODate {
     instant,
   );
 }
+
+/** Same day `n` months later, clamped to the target month's last day. */
+export function addMonths(d: ISODate, n: number): ISODate {
+  const [y, m, day] = d.split("-").map(Number) as [number, number, number];
+  const i = y * 12 + (m - 1) + n;
+  const ty = Math.floor(i / 12);
+  const tm = (i % 12) + 1;
+  const td = Math.min(day, daysInMonth(ty, tm));
+  return `${ty}-${String(tm).padStart(2, "0")}-${String(td).padStart(2, "0")}`;
+}

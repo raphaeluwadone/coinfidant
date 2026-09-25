@@ -21,7 +21,21 @@ export const toneSchema = z.enum(["gentle", "cheeky", "unhinged"]);
 
 export const idParam = z.object({ id: z.uuid() });
 
-export const preferencesInput = z.object({ timezone, personality: toneSchema, displayName: name.nullable() }).partial();
+export const leakSchema = z.enum(["food", "drinks", "transport", "treating", "impulse"]);
+export const overspendTimeSchema = z.enum(["afterPayday", "weekends", "monthEnd"]);
+export const checkinSchema = z.enum(["evening", "drift", "app"]);
+export const leftoverSchema = z.enum(["debts", "savings"]);
+
+export const preferencesInput = z
+  .object({
+    timezone,
+    personality: toneSchema,
+    displayName: name.nullable(),
+    checkinMethod: checkinSchema,
+    leakCategories: z.array(leakSchema).max(5),
+    overspendTimes: z.array(overspendTimeSchema).max(3),
+  })
+  .partial();
 export type PreferencesInput = z.input<typeof preferencesInput>;
 
 export const billInput = z.object({ name, amount: minor });
@@ -48,6 +62,9 @@ export const settingsInput = z
     expectedPayday: z.int().min(1).max(31),
     everydayEstimate: minorOrZero.nullable(),
     currency: currencySchema,
+    leftoverDefault: leftoverSchema,
+    paydayMode: z.boolean(),
+    discovery: z.boolean(),
   })
   .partial();
 export type SettingsInput = z.input<typeof settingsInput>;
@@ -74,6 +91,31 @@ export const commitmentInput = z
   .object({ name, min: minorOrZero, ideal: minorOrZero })
   .refine((c) => c.ideal >= c.min, "ideal must be at least the minimum");
 
+export const goalInput = z.object({ name, emoji: z.string().min(1).max(16).default("🎯"), target: minor });
+
+/** Everything the 10 onboarding steps collect, saved in one go at the plan reveal. */
+export const onboardingInput = z.object({
+  personality: toneSchema,
+  timezone,
+  currency: currencySchema.default("NGN"),
+  salary: minor,
+  expectedPayday: z.int().min(1).max(31),
+  lastSalaryOn: isoDate,
+  savingsPercent: z.int().min(0).max(90).default(10),
+  bills: z.array(billInput).max(50),
+  sinkingFunds: z.array(sinkingFundInput).max(20),
+  debts: z.array(debtInput).max(50),
+  goals: z.array(goalInput).max(20),
+  commitments: z.array(commitmentInput).max(20),
+  everydayEstimate: minorOrZero.nullable(),
+  discovery: z.boolean(),
+  leakCategories: z.array(leakSchema).max(5),
+  overspendTimes: z.array(overspendTimeSchema).max(3),
+  checkinMethod: checkinSchema,
+  leftoverDefault: leftoverSchema,
+});
+export type OnboardingInput = z.input<typeof onboardingInput>;
+
 export const categoryInput = z.object({ name: z.string().trim().min(1).max(24), emoji: z.string().min(1).max(16) });
 export const categoryPatch = categoryInput.partial().extend({ position: z.int().min(0).max(99).optional() });
 
@@ -89,6 +131,7 @@ export const transactionPatch = transactionInput.partial();
 
 export const salaryInput = z.object({ amount: minor.optional(), receivedOn: isoDate.optional() });
 export const debtPaymentInput = z.object({ amount: minor, paidOn: isoDate.optional() });
+export const topUpInput = z.object({ amount: minorOrZero });
 export const sweepChoiceInput = z.object({ debtId: z.uuid().nullable() });
 export const weekParam = z.object({ week: z.coerce.number().int().min(0).max(6) });
 

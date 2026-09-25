@@ -37,6 +37,7 @@ export function SetupForm({ initial }: { initial: BudgetData | null }) {
         weekStart: 0,
         expectedPayday: payday,
         everydayEstimate: null,
+        leftoverDefault: "savings",
       },
       cycle: { start: cycleStart, salary },
       bills: validBills.map((b, i) => ({ id: String(i), ...b })),

@@ -39,6 +39,15 @@ export const users = pgTable("users", {
   displayName: text("display_name"),
   timezone: text("timezone").notNull().default("Africa/Lagos"),
   personality: text("personality").notNull().default("cheeky"),
+  checkinMethod: text("checkin_method").notNull().default("app"),
+  leakCategories: text("leak_categories")
+    .array()
+    .notNull()
+    .default(sql`'{}'::text[]`),
+  overspendTimes: text("overspend_times")
+    .array()
+    .notNull()
+    .default(sql`'{}'::text[]`),
   createdAt: createdAt(),
 });
 
@@ -87,6 +96,10 @@ export const budgets = pgTable(
     weekStart: smallint("week_start").notNull().default(0),
     expectedPayday: smallint("expected_payday").notNull(),
     everydayEstimate: money("everyday_estimate"),
+    leftoverDefault: text("leftover_default").notNull().default("savings"),
+    paydayMode: boolean("payday_mode").notNull().default(false),
+    // "No idea" in onboarding: a first cycle of logging only, no judgment.
+    discovery: boolean("discovery").notNull().default(false),
     createdAt: createdAt(),
   },
   (t) => [
@@ -96,6 +109,7 @@ export const budgets = pgTable(
     check("budgets_floor_range", sql`${t.floorPercent} between 0 and 100`),
     check("budgets_week_start_range", sql`${t.weekStart} between 0 and 6`),
     check("budgets_payday_range", sql`${t.expectedPayday} between 1 and 31`),
+    check("budgets_leftover_default", sql`${t.leftoverDefault} in ('savings', 'debts')`),
     // The creator can see their budget before the membership row exists.
     pgPolicy("budgets_member", {
       for: "all",
@@ -213,6 +227,24 @@ export const commitments = pgTable(
   ],
 );
 
+export const goals = pgTable(
+  "goals",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    budgetId: budgetRef(),
+    name: text("name").notNull(),
+    emoji: text("emoji").notNull().default("🎯"),
+    target: money("target").notNull(),
+    saved: money("saved").notNull().default(0),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    index().on(t.budgetId),
+    check("goals_amounts", sql`${t.target} > 0 and ${t.saved} >= 0`),
+    inMyBudgets("goals"),
+  ],
+);
+
 // `slug` marks the built-in defaults so auto-tags can recognise them after a rename.
 export const categories = pgTable(
   "categories",
@@ -240,6 +272,10 @@ export const cycles = pgTable(
     snapshot: jsonb("snapshot"),
     engineVersion: text("engine_version"),
     closedAt: timestamp("closed_at", { withTimezone: true }),
+    // Null until the Payday flow has been shown for this cycle.
+    paydaySeenAt: timestamp("payday_seen_at", { withTimezone: true }),
+    // Discovery results, stored on the cycle that did the learning.
+    learned: jsonb("learned"),
     createdAt: createdAt(),
   },
   (t) => [
@@ -296,6 +332,25 @@ export const debtPayments = pgTable(
     index().on(t.cycleId),
     check("debt_payments_amount_positive", sql`${t.amount} > 0`),
     inMyBudgets("debt_payments"),
+  ],
+);
+
+export const cycleTopUps = pgTable(
+  "cycle_top_ups",
+  {
+    budgetId: budgetRef(),
+    cycleId: uuid("cycle_id")
+      .notNull()
+      .references(() => cycles.id, { onDelete: "cascade" }),
+    itemKind: text("item_kind").notNull(),
+    itemId: uuid("item_id").notNull(),
+    amount: money("amount").notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.cycleId, t.itemId] }),
+    check("cycle_top_ups_kind", sql`${t.itemKind} in ('commitment', 'debt')`),
+    check("cycle_top_ups_amount", sql`${t.amount} > 0`),
+    inMyBudgets("cycle_top_ups"),
   ],
 );
 

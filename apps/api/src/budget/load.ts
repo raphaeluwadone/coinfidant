@@ -14,8 +14,10 @@ import {
   categories,
   commitments,
   cycles,
+  cycleTopUps,
   debtPayments,
   debts,
+  goals,
   incomes,
   sinkingFunds,
   sweepChoices,
@@ -28,7 +30,7 @@ import {
 export async function loadBudget(tx: Tx, budgetId: string) {
   const [budget] = await tx.select().from(budgets).where(eq(budgets.id, budgetId)).limit(1);
   if (!budget) return null;
-  const [incomeRows, billRows, fundRows, debtRows, commitmentRows, categoryRows] = await Promise.all([
+  const [incomeRows, billRows, fundRows, debtRows, commitmentRows, categoryRows, goalRows] = await Promise.all([
     tx.select().from(incomes).where(eq(incomes.budgetId, budgetId)).orderBy(asc(incomes.name)),
     tx.select().from(bills).where(eq(bills.budgetId, budgetId)).orderBy(asc(bills.name)),
     tx.select().from(sinkingFunds).where(eq(sinkingFunds.budgetId, budgetId)).orderBy(asc(sinkingFunds.dueDate)),
@@ -39,6 +41,7 @@ export async function loadBudget(tx: Tx, budgetId: string) {
       .from(categories)
       .where(eq(categories.budgetId, budgetId))
       .orderBy(asc(categories.position), asc(categories.name)),
+    tx.select().from(goals).where(eq(goals.budgetId, budgetId)).orderBy(asc(goals.createdAt)),
   ]);
   return {
     ...budget,
@@ -48,6 +51,7 @@ export async function loadBudget(tx: Tx, budgetId: string) {
     debts: debtRows,
     commitments: commitmentRows,
     categories: categoryRows,
+    goals: goalRows,
   };
 }
 export type LoadedBudget = NonNullable<Awaited<ReturnType<typeof loadBudget>>>;
@@ -63,11 +67,19 @@ export type CycleRow = NonNullable<Awaited<ReturnType<typeof openCycleOf>>>;
 
 export async function userPrefs(tx: Tx, userId: string) {
   const [u] = await tx
-    .select({ timezone: users.timezone, personality: users.personality, displayName: users.displayName })
+    .select({
+      timezone: users.timezone,
+      personality: users.personality,
+      displayName: users.displayName,
+      checkinMethod: users.checkinMethod,
+      leakCategories: users.leakCategories,
+      overspendTimes: users.overspendTimes,
+    })
     .from(users)
     .where(eq(users.id, userId))
     .limit(1);
-  return u ?? { timezone: "Africa/Lagos", personality: "cheeky", displayName: null };
+  if (!u) throw new Error(`user ${userId} not found`);
+  return u;
 }
 
 export function cycleTransactions(tx: Tx, budgetId: string, from: ISODate, to: ISODate) {
@@ -107,7 +119,7 @@ export async function engineInput(
   today: ISODate,
   lastDay: ISODate = today,
 ): Promise<{ input: EngineInput; txns: Awaited<ReturnType<typeof cycleTransactions>> }> {
-  const [txns, payments, sweeps] = await Promise.all([
+  const [txns, payments, sweeps, topUps] = await Promise.all([
     cycleTransactions(tx, budget.id, cycle.startDate, lastDay),
     tx
       .select()
@@ -117,6 +129,10 @@ export async function engineInput(
       .select()
       .from(sweepChoices)
       .where(and(eq(sweepChoices.budgetId, budget.id), eq(sweepChoices.cycleId, cycle.id))),
+    tx
+      .select()
+      .from(cycleTopUps)
+      .where(and(eq(cycleTopUps.budgetId, budget.id), eq(cycleTopUps.cycleId, cycle.id))),
   ]);
 
   const sweepMap: Record<number, SweepChoice> = {};
@@ -131,6 +147,7 @@ export async function engineInput(
       weekStart: budget.weekStart as WeekStart,
       expectedPayday: budget.expectedPayday,
       everydayEstimate: budget.everydayEstimate,
+      leftoverDefault: budget.leftoverDefault as "savings" | "debts",
     },
     cycle: { start: cycle.startDate, salary: cycle.salary },
     bills: budget.bills.map((b) => ({ id: b.id, name: b.name, amount: b.amount })),
@@ -158,6 +175,7 @@ export async function engineInput(
     })),
     sweepChoices: sweepMap,
     debtPayments: payments.map((p) => ({ debtId: p.debtId, amount: p.amount })),
+    topUps: topUps.map((t) => ({ id: t.itemId, amount: t.amount })),
   };
   return { input, txns };
 }

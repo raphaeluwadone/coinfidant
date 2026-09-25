@@ -14,6 +14,20 @@ export type Budget = {
   incomes: { id: string; name: string; amount: Minor; kind: string }[];
   bills: Bill[];
   categories: Category[];
+  sinkingFunds: { id: string; name: string; target: Minor; saved: Minor; dueDate: ISODate }[];
+  debts: {
+    id: string;
+    name: string;
+    creditor: string;
+    amountLeft: Minor;
+    plan: "oneOff" | "installments" | "flexible";
+    minAmount: Minor | null;
+    idealAmount: Minor | null;
+  }[];
+  commitments: { id: string; name: string; minAmount: Minor; idealAmount: Minor }[];
+  goals: { id: string; name: string; emoji: string; target: Minor; saved: Minor }[];
+  paydayMode: boolean;
+  discovery: boolean;
 };
 
 export type Prefs = { timezone: string; personality: "gentle" | "cheeky" | "unhinged"; displayName: string | null };

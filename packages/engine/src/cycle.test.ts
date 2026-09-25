@@ -39,6 +39,7 @@ function input(o: Overrides = {}): EngineInput {
       weekStart: 0,
       expectedPayday: 1,
       everydayEstimate: null,
+      leftoverDefault: "savings",
       ...o.settings,
     },
     cycle: { start: "2026-06-01", salary: NGN(400_000), ...o.cycle },

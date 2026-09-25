@@ -7,7 +7,9 @@ export const Route = createFileRoute("/_app")({
     const user = await context.queryClient.ensureQueryData(meQuery);
     if (!user) throw redirect({ to: "/login" });
     const budget = await context.queryClient.ensureQueryData(budgetQuery);
-    if (!budget && location.pathname !== "/setup") throw redirect({ to: "/setup" });
+    const onboarding = location.pathname === "/onboarding";
+    if (!budget && !onboarding) throw redirect({ to: "/onboarding" });
+    if (budget && onboarding) throw redirect({ to: "/" });
     return { user, budget };
   },
   component: Outlet,

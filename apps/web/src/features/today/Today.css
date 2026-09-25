@@ -435,3 +435,47 @@
   background: var(--accent-tint);
   box-shadow: none;
 }
+
+.week__all {
+  display: inline-block;
+  margin-top: 14px;
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.pace--learning {
+  color: var(--text-soft);
+}
+
+.discovery-card {
+  display: grid;
+  gap: 10px;
+  padding: 16px 18px;
+  text-decoration: none;
+  color: inherit;
+  animation: fade-up 0.6s var(--ease) both;
+}
+.discovery-card__badge {
+  justify-self: start;
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--success) 14%, transparent);
+  color: var(--success);
+  font-size: 12px;
+  font-weight: 700;
+}
+.discovery-card__bar {
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+}
+.discovery-card__bar div {
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--success);
+}
+.discovery-card__meta {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-soft);
+}

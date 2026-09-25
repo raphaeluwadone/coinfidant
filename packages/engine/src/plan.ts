@@ -26,7 +26,7 @@ export function sinkingSetAside(f: EngineInput["sinkingFunds"][number], start: I
   return Math.ceil(remaining / cyclesLeft);
 }
 
-/** R5–R10 */
+/** R5–R10, R24 */
 export function computePlan(input: EngineInput, projectedEnd: ISODate) {
   const { salary, start } = input.cycle;
   const s = input.settings;
@@ -38,8 +38,14 @@ export function computePlan(input: EngineInput, projectedEnd: ISODate) {
   const savingsGoal = Math.round((salary * s.savingsPercent) / 100);
   const savingsFloor = Math.round((salary * s.minSavingsPercent) / 100);
   let savingsRoom = Math.max(0, savingsGoal - savingsFloor);
+  const topUp = (id: string) => Math.max(0, input.topUps?.find((t) => t.id === id)?.amount ?? 0);
   const debts = input.debts.map((d) => {
-    const due = debtDue(d, start, projectedEnd);
+    const base = debtDue(d, start, projectedEnd);
+    // R24: an accepted top-up lifts a flexible debt toward its ideal, never past it or the amount left.
+    const due =
+      d.plan.kind === "flexible"
+        ? Math.min(base + topUp(d.id), Math.max(base, Math.min(d.plan.ideal, d.amountLeft)))
+        : base;
     const fromSavings = Math.min(due, savingsRoom);
     savingsRoom -= fromSavings;
     return { id: d.id, due, fromSavings, fromFlexible: due - fromSavings };
@@ -53,7 +59,10 @@ export function computePlan(input: EngineInput, projectedEnd: ISODate) {
     id: f.id,
     setAside: sinkingSetAside(f, start, s.expectedPayday),
   }));
-  const commitments = input.commitments.map((c) => ({ id: c.id, amount: c.min }));
+  const commitments = input.commitments.map((c) => ({
+    id: c.id,
+    amount: c.min + Math.min(topUp(c.id), Math.max(0, c.ideal - c.min)),
+  }));
 
   const raw =
     salary -
@@ -77,7 +86,7 @@ export function computePlan(input: EngineInput, projectedEnd: ISODate) {
   if (s.everydayEstimate !== null) {
     let headroom = flexible - s.everydayEstimate;
     const gaps = [
-      ...input.commitments.map((c) => ({ id: c.id, gap: c.ideal - c.min })),
+      ...input.commitments.map((c) => ({ id: c.id, gap: c.ideal - commitments.find((x) => x.id === c.id)!.amount })),
       ...input.debts.flatMap((d) =>
         d.plan.kind === "flexible"
           ? [{ id: d.id, gap: Math.min(d.plan.ideal, d.amountLeft) - debts.find((x) => x.id === d.id)!.due }]

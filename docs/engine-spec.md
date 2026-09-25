@@ -17,6 +17,7 @@ type EngineInput = {
     weekStart: 0 | 1 | 2 | 3 | 4 | 5 | 6; // 0 = Monday (default)
     expectedPayday: number; // 1–31, clamped to month end
     everydayEstimate: Minor | null; // from onboarding; null = "No idea" (discovery cycle)
+    leftoverDefault: "savings" | "debts"; // R21
   };
   cycle: { start: ISODate; salary: Minor }; // opened when salary is marked received
   bills: { id: string; name: string; amount: Minor }[]; // monthly, fixed
@@ -26,6 +27,7 @@ type EngineInput = {
   transactions: { id: string; amount: Minor; date: ISODate; type: "spend" | "refund" }[];
   sweepChoices: Record<number, { to: "savings" } | { to: "debt"; debtId: string }>; // by week index
   debtPayments: { debtId: string; amount: Minor }[]; // repayments marked paid this cycle
+  topUps?: { id: string; amount: Minor }[]; // R24, accepted on payday
 };
 
 type Debt = {
@@ -113,6 +115,28 @@ Only transactions dated inside the open cycle count. Fixed bills are never trans
   from savings at close and flagged the same way.
 - **R19 Back-dated entries.** The engine recomputes from all transactions every time. A back-dated spend can turn a
   past week's sweep into a carry-forward. Nothing is committed until the cycle closes.
+
+### Leftovers and phases
+
+- **R21 Leftover default.** A finished week with no `sweepChoices` entry sweeps to the current attack target (R22) when
+  `leftoverDefault` is `debts`, otherwise to savings. With no active debts it always goes to savings.
+- **R22 Attack order.** Active debts (amount left above 0), interest-bearing first, then the smallest balance
+  (snowball), then by id. There's no interest rate yet, so `hasInterest` is the only cost signal.
+- **R23 Phase.** No active debts is **Build**. Active debts plus a squeezed plan is **Stabilise**: `overcommitted`,
+  `tight`, or any repayment taking money from flexible (`fromFlexible > 0`). Anything else is **Attack**. The rough
+  unlock month is `cycle.start` plus the cycles until the first debt clears (Stabilise) or until all debts clear at the
+  current total repayment (Attack). No estimate when nothing is being repaid.
+
+### Payday and discovery
+
+- **R24 Accepted top-ups.** `topUps` holds amounts accepted for this cycle (on payday) toward a commitment's or
+  flexible debt's ideal. A commitment is budgeted at `min + topUp`, clamped to its ideal. A flexible debt's due rises
+  by the top-up, clamped to `min(ideal, amountLeft)`. R10 suggestions then only offer the gap that remains.
+- **R25 Discovery progress.** For a discovery cycle: `day` of `days`, a confidence of
+  `round(100 × min(1, 0.7 × elapsed/days + 0.3 × loggedDays/elapsed))`, and per category the net spend so far. A
+  category is learned after 3 spends on at least 2 days; its monthly estimate is `spent / elapsed × days`, rounded to
+  NGN 1,000. At cycle close the figures are the real totals, rounded to NGN 100, and their sum becomes
+  `everydayEstimate`.
 
 ### Money
 

@@ -64,6 +64,20 @@
       "when": 1790267760791,
       "tag": "0008_budgets_cleanup",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1790270996908,
+      "tag": "0009_onboarding",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1790324940526,
+      "tag": "0010_payday_discovery",
+      "breakpoints": true
     }
   ]
 }

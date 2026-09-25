@@ -4,6 +4,7 @@ import {
   hasEvent,
   type OpenCycle,
   type DayState,
+  type DiscoveryProgress,
   formatMoney,
   PACE_LABEL,
   paceStatus,
@@ -13,11 +14,12 @@ import {
   toDayNum,
 } from "@coinfidant/engine";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Mascot } from "../../components/Mascot";
 import type { SessionUser } from "../../lib/auth";
-import { todayQuery, type TodayData } from "../../lib/today";
+import { learnedQueryKey } from "../discovery/Discovery";
+import { paydayDue, todayQuery, type TodayData } from "../../lib/today";
 import { markSalaryReceived } from "../../lib/transactions";
 import "./Today.css";
 
@@ -56,7 +58,10 @@ export function Today({ user }: { user: SessionUser }) {
 function TodayView({ data, snapshot: s, user }: { data: TodayData; snapshot: OpenCycle; user: SessionUser }) {
   const currency = data.currency;
   const tone = TONES.find((t) => t.key === data.prefs.personality) ?? TONES[1]!;
+  const learning = !!data.discovery;
+  // Discovery is judgment-free: no pace verdicts or "over" colouring until the cycle has taught us real numbers.
   const pace = paceStatus(s);
+  const mood = learning ? (s.today.spentToday > 0 ? "onTrack" : "fresh") : todayMood(s);
   const daysDone = s.today.strip.filter((d) => d.state === "on" || d.state === "covered" || d.state === "over").length;
   const date = new Date(toDayNum(s.today.date) * 86_400_000);
   const fmtDate = (o: Intl.DateTimeFormatOptions) => date.toLocaleDateString("en-GB", { timeZone: "UTC", ...o });
@@ -87,23 +92,28 @@ function TodayView({ data, snapshot: s, user }: { data: TodayData; snapshot: Ope
         </div>
       </header>
 
-      {hasEvent(s, "salaryOverdue") && <SalaryPrompt compact />}
+      {s.cycle.overrunDays > 0 && <SalaryPrompt compact overdue={hasEvent(s, "salaryOverdue")} />}
+      {data.discovery && <DiscoveryCard progress={data.discovery} />}
 
       <div className="today__grid">
         <section className="card hero">
           <div className="label">You can spend today</div>
           <div className="hero__amount">{formatMoney(Math.max(0, s.today.spendToday), currency)}</div>
-          <Quip key={`${todayMood(s)}-${tone.key}`} lines={quipsFor(todayMood(s), tone.key)} />
+          <Quip key={`${mood}-${tone.key}`} lines={quipsFor(mood, tone.key)} />
           <div className="stats">
             <div className="stat">
               <div className="stat__label">Left this week</div>
-              <div className={`stat__value ${s.today.leftThisWeek < 0 ? "is-over" : ""}`}>
+              <div className={`stat__value ${s.today.leftThisWeek < 0 && !learning ? "is-over" : ""}`}>
                 {formatMoney(s.today.leftThisWeek, currency)}
               </div>
             </div>
             <div className="stat">
               <div className="stat__label">Daily avg pace</div>
-              <div className={`stat__value pace--${pace}`}>{PACE_LABEL[pace]}</div>
+              {learning ? (
+                <div className="stat__value pace--learning">Learning 🔍</div>
+              ) : (
+                <div className={`stat__value pace--${pace}`}>{PACE_LABEL[pace]}</div>
+              )}
             </div>
           </div>
           <StatusChips snapshot={s} currency={currency} className="chips chips--desktop" />
@@ -128,6 +138,9 @@ function TodayView({ data, snapshot: s, user }: { data: TodayData; snapshot: Ope
               </li>
             ))}
           </ul>
+          <Link to="/transactions" className="link-btn week__all">
+            See transactions →
+          </Link>
         </section>
 
         <StatusChips snapshot={s} currency={currency} className="chips chips--mobile" />
@@ -214,21 +227,40 @@ function TodaySkeleton() {
   );
 }
 
+function DiscoveryCard({ progress: p }: { progress: DiscoveryProgress }) {
+  return (
+    <Link to="/discovery" className="card discovery-card">
+      <span className="discovery-card__badge">
+        🔍 Discovery cycle · Day {p.day} of {p.days}
+      </span>
+      <div className="discovery-card__bar" aria-hidden="true">
+        <div style={{ width: `${p.confidence}%` }} />
+      </div>
+      <span className="discovery-card__meta">{p.confidence}% confident in your numbers · See what we've learned →</span>
+    </Link>
+  );
+}
+
 /** Asks whether salary has landed; confirming closes the old cycle and opens today's. */
-function SalaryPrompt({ compact = false }: { compact?: boolean }) {
+function SalaryPrompt({ compact = false, overdue = false }: { compact?: boolean; overdue?: boolean }) {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const mark = useMutation({
     mutationFn: () => markSalaryReceived(),
-    onSuccess: (res) => {
+    onSuccess: async (res) => {
       qc.setQueryData(todayQuery.queryKey, res.today);
-      qc.invalidateQueries({ queryKey: ["budget"] });
+      await qc.invalidateQueries({ queryKey: ["budget"] });
+      if (res.learned) {
+        qc.setQueryData(learnedQueryKey, res.learned);
+        navigate({ to: "/discovery/complete" });
+      } else if (paydayDue(res.today)) navigate({ to: "/payday" });
     },
   });
   return (
     <section className={`card salary-prompt ${compact ? "is-compact" : ""}`}>
       {!compact && <Mascot mood="happy" size={56} />}
       <div>
-        <h2>Did your salary land?</h2>
+        <h2>{compact && !overdue ? "Payday! 💸 Did your salary land?" : "Did your salary land?"}</h2>
         <p>Say the word and we'll close off the last cycle and plan the new one.</p>
       </div>
       <button className="btn" onClick={() => mark.mutate()} disabled={mark.isPending}>

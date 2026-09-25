@@ -7,6 +7,7 @@ export function MoneyInput({
   value,
   onChange,
   currency = "NGN",
+  className = "",
   ...rest
 }: {
   value: Minor;
@@ -14,7 +15,7 @@ export function MoneyInput({
   currency?: string;
 } & Omit<React.InputHTMLAttributes<HTMLInputElement>, "value" | "onChange">) {
   return (
-    <div className="money-input">
+    <div className={`money-input ${className}`}>
       <span>{currency}</span>
       <input
         {...rest}

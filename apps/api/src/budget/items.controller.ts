@@ -1,6 +1,7 @@
 import {
   billInput,
   commitmentInput,
+  goalInput,
   debtInput,
   debtPaymentInput,
   idParam,
@@ -24,30 +25,13 @@ import type { AnyPgColumn, PgTable } from "drizzle-orm/pg-core";
 import type { z } from "zod";
 import { UserId } from "../auth/auth.guard";
 import { ZodPipe } from "../common/zod.pipe";
-import { bills, commitments, debtPayments, debts, incomes, sinkingFunds } from "../db/schema";
+import { bills, commitments, debtPayments, debts, goals, incomes, sinkingFunds } from "../db/schema";
 import { BudgetScope } from "./budget.scope";
+import { commitmentRow, debtRow } from "./rows";
 import { openCycleOf, todayFor, userPrefs } from "./load";
 
 type Id = z.output<typeof idParam>;
 type Owned = PgTable & { id: AnyPgColumn; budgetId: AnyPgColumn };
-
-const debtRow = (d: z.output<typeof debtInput>) => ({
-  name: d.name,
-  creditor: d.creditor,
-  amountLeft: d.amountLeft,
-  hasInterest: d.hasInterest,
-  plan: d.plan.kind,
-  dueDate: d.plan.kind === "oneOff" ? d.plan.due : null,
-  perCycle: d.plan.kind === "installments" ? d.plan.perCycle : null,
-  minAmount: d.plan.kind === "flexible" ? d.plan.min : null,
-  idealAmount: d.plan.kind === "flexible" ? d.plan.ideal : null,
-});
-
-const commitmentRow = (c: z.output<typeof commitmentInput>) => ({
-  name: c.name,
-  minAmount: c.min,
-  idealAmount: c.ideal,
-});
 
 @Controller()
 export class ItemsController {
@@ -168,6 +152,20 @@ export class ItemsController {
         .returning();
       return { payment };
     });
+  }
+
+  @Post("goals") createGoal(@UserId() u: string, @Body(new ZodPipe(goalInput)) b: z.output<typeof goalInput>) {
+    return this.create(u, goals, b);
+  }
+  @Patch("goals/:id") updateGoal(
+    @UserId() u: string,
+    @Param(new ZodPipe(idParam)) p: Id,
+    @Body(new ZodPipe(goalInput.partial())) b: object,
+  ) {
+    return this.update(u, goals, p.id, b);
+  }
+  @Delete("goals/:id") @HttpCode(204) deleteGoal(@UserId() u: string, @Param(new ZodPipe(idParam)) p: Id) {
+    return this.remove(u, goals, p.id);
   }
 
   @Post("commitments") createCommitment(

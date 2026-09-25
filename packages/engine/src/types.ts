@@ -25,6 +25,8 @@ export type EngineInput = {
     weekStart: WeekStart;
     expectedPayday: number;
     everydayEstimate: Minor | null;
+    /** R21: where a week's leftover goes when nobody picked. */
+    leftoverDefault: "savings" | "debts";
   };
   cycle: { start: ISODate; salary: Minor };
   bills: { id: string; name: string; amount: Minor }[];
@@ -34,6 +36,8 @@ export type EngineInput = {
   transactions: { id: string; amount: Minor; date: ISODate; type: "spend" | "refund" }[];
   sweepChoices: Record<number, SweepChoice>;
   debtPayments: { debtId: string; amount: Minor }[];
+  /** R24: top-ups toward a commitment's or flexible debt's ideal, accepted for this cycle. */
+  topUps?: { id: string; amount: Minor }[];
 };
 
 export type WeekOutcome =
