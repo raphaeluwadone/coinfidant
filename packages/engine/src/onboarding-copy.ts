@@ -1,94 +1,38 @@
-import type { Tone } from "./copy";
 import { formatMoney } from "./money";
+import { say, type Tone, TONES } from "./voice";
 
 type Lines = Record<Tone, string>;
 
-/** The sweep line from the plan doc, used to preview each sass level on the welcome step. */
-export const sweepPreview = (amount: number): Lines => ({
-  gentle: `Nice week! ${formatMoney(amount)} moved to savings 🌱`,
-  cheeky: `${formatMoney(amount)} swept into savings. Future you just did a little dance 💃`,
-  unhinged: `${formatMoney(amount)} YEETED into savings 🚀 Your bank account is blushing 😳`,
-});
+const byTone = (f: (t: Tone) => string): Lines => Object.fromEntries(TONES.map(({ key }) => [key, f(key)])) as Lines;
 
-export const paydayLine: Lines = {
-  gentle: "Got it. We'll plan around your payday.",
-  cheeky: "Noted. We'll be ready when it drops 🫡",
-  unhinged: "PAYDAY LOCKED IN. WE RIDE AT DAWN 🫡🐎",
-};
+/** The sweep line from the plan doc, used to preview each sass level. */
+export const sweepPreview = (amount: number): Lines =>
+  byTone((t) => say("sweep.savings", t, { amount: formatMoney(amount) }));
+
+export const paydayLine: Lines = byTone((t) => say("onboarding.payday", t));
 
 export function billsLine(percent: number, tone: Tone): string {
-  if (percent === 0) {
-    return {
-      gentle: "No fixed bills. That keeps things simple.",
-      cheeky: "No bills? Living the dream ☁️",
-      unhinged: "ZERO BILLS?? Teach me your ways 🧘✨",
-    }[tone];
-  }
-  const p = `${Math.round(percent)}%`;
-  if (percent < 25) {
-    return {
-      gentle: `${p} of your pay goes to bills. That's a healthy share.`,
-      cheeky: `${p} on bills? Respectable. Very adult of you 👔`,
-      unhinged: `${p} on bills?? Look at you being a FUNCTIONING ADULT 👔🔥`,
-    }[tone];
-  }
-  if (percent < 50) {
-    return {
-      gentle: `${p} of your pay goes to bills. We'll plan around it.`,
-      cheeky: `${p} on bills. Chunky, but we can work with it 💪`,
-      unhinged: `${p} ON BILLS. The bills are eating well. We'll manage 🍽️`,
-    }[tone];
-  }
-  // Stakes override: a heavy bill load gets the calm voice at every level.
-  return `${p} of your pay goes to bills. That's a lot, and we'll build the plan around what's left.`;
+  if (percent === 0) return say("onboarding.bills.none", tone);
+  const vars = { percent: `${Math.round(percent)}%` };
+  if (percent < 25) return say("onboarding.bills.low", tone, vars);
+  if (percent < 50) return say("onboarding.bills.mid", tone, vars);
+  return say("onboarding.bills.heavy", tone, vars);
 }
 
 export const sinkingLine = (count: number): Lines =>
-  count
-    ? {
-        gentle: "Set-asides make big bills feel small.",
-        cheeky: "Future you won't be ambushed by these 🪣",
-        unhinged: "BIG BILLS, MEET YOUR SLOW-COOKER 🪣🔥",
-      }
-    : {
-        gentle: "Nothing big on the horizon. You can add some any time.",
-        cheeky: "Nothing big coming? Enjoy the calm ☕",
-        unhinged: "NO BIG BILLS. Suspicious. But we love it ☕",
-      };
+  byTone((t) => say(count ? "onboarding.sinking.some" : "onboarding.sinking.none", t));
 
-/** Debt is never joked about (plan doc voice rules), so every level gets a warm line. */
 export function debtsLine(count: number): string {
-  if (count === 0) return "No debts. That gives us a lot of room to build 🌱";
-  if (count >= 5) return "That's a lot to carry. We'll take them on one at a time, together.";
-  return "Thanks for being honest. This is how we beat them 💪";
+  if (count === 0) return say("onboarding.debts.none", "gentle");
+  return say(count >= 5 ? "onboarding.debts.many" : "onboarding.debts.some", "gentle");
 }
 
 export const goalsLine = (count: number): Lines =>
-  count
-    ? {
-        gentle: "Lovely. We'll keep these in view.",
-        cheeky: "Now we've got something to aim at 🎯",
-        unhinged: "MAIN CHARACTER GOALS DETECTED 🎯✨",
-      }
-    : {
-        gentle: "That's fine. Goals can come later.",
-        cheeky: "No goals yet? We'll find you some 😏",
-        unhinged: "NO GOALS YET. The plot is still loading 🎬",
-      };
+  byTone((t) => say(count ? "onboarding.goals.some" : "onboarding.goals.none", t));
 
 export const everydayLine = (discovery: boolean): Lines =>
-  discovery
-    ? {
-        gentle: "No problem. We'll learn it together this month.",
-        cheeky: "No stress. We'll figure it out together this month 🔍",
-        unhinged: "DETECTIVE MODE ON. We find out this month 🔍🕵️",
-      }
-    : {
-        gentle: "Thanks. We'll check it against real spending.",
-        cheeky: "Got it. We'll see how close that guess is 👀",
-        unhinged: "NOTED. We will be FACT-CHECKING this 👀📋",
-      };
+  byTone((t) => say(discovery ? "onboarding.everyday.discovery" : "onboarding.everyday.estimate", t));
 
-export const paydayModeSample = "Salary landed! Before we get excited, let's feed the responsibilities first 🍽️";
+export const paydayModeSample = say("payday.sample", "cheeky");
 
 export const REVEAL_TAGLINE = "It's not a mess. It's a plan now 😏";

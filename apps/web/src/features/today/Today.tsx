@@ -86,7 +86,7 @@ function TodayView({ data, snapshot: s, user }: { data: TodayData; snapshot: Ope
             {tone.emoji} {tone.label}
             <span className="pill__suffix"> mode</span>
           </span>
-          <Link to="/setup" className="round-btn" aria-label="Edit plan">
+          <Link to="/settings" className="round-btn" aria-label="Settings">
             ⚙️
           </Link>
         </div>
@@ -99,7 +99,7 @@ function TodayView({ data, snapshot: s, user }: { data: TodayData; snapshot: Ope
         <section className="card hero">
           <div className="label">You can spend today</div>
           <div className="hero__amount">{formatMoney(Math.max(0, s.today.spendToday), currency)}</div>
-          <Quip key={`${mood}-${tone.key}`} lines={quipsFor(mood, tone.key)} />
+          <Quip key={`${mood}-${tone.key}`} lines={quipsFor(mood, tone.key, { stakes: data.stakes })} />
           <div className="stats">
             <div className="stat">
               <div className="stat__label">Left this week</div>
@@ -257,6 +257,7 @@ function SalaryPrompt({ compact = false, overdue = false }: { compact?: boolean;
       await qc.invalidateQueries({ queryKey: ["budget"] });
       qc.setQueryData(learnedQueryKey, res.learned);
       await qc.invalidateQueries({ queryKey: ["history"] });
+      qc.invalidateQueries({ queryKey: ["growth"] });
       if (res.closedCycleId) navigate({ to: "/cycles/$id", params: { id: res.closedCycleId }, search: { flow: true } });
       else if (paydayDue(res.today)) navigate({ to: "/payday" });
     },

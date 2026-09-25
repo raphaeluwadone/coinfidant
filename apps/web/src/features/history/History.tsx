@@ -61,7 +61,7 @@ function ThisCycle({ data }: { data: TodayData }) {
           let right: string;
           let kind = "";
           if (w.status === "current") {
-            line = quipsFor(data.discovery ? "onTrack" : todayMood(s), tone)[0]!;
+            line = quipsFor(data.discovery ? "onTrack" : todayMood(s), tone, { stakes: data.stakes })[0]!;
             right = `${money(s.today.leftThisWeek)}`;
           } else if (w.outcome?.kind === "swept") {
             line = weekLine(w.outcome, tone, money);

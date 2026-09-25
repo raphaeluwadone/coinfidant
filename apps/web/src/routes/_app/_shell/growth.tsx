@@ -1,6 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ComingSoon } from "../../../components/ComingSoon";
+import { Growth } from "../../../features/growth/Growth";
+import { growthQuery } from "../../../lib/growth";
+import { todayQuery } from "../../../lib/today";
 
 export const Route = createFileRoute("/_app/_shell/growth")({
-  component: () => <ComingSoon title="Growth" line="Charts are doing push-ups. Coming soon." />,
+  loader: ({ context }) =>
+    Promise.all([context.queryClient.prefetchQuery(growthQuery), context.queryClient.prefetchQuery(todayQuery)]),
+  component: Growth,
 });

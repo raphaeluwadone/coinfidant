@@ -52,7 +52,7 @@ export function Transactions() {
     <div className="txns">
       <header className="txns__head">
         <h1>Transactions</h1>
-        <Link to="/setup" className="round-btn" aria-label="Edit plan">
+        <Link to="/settings" className="round-btn" aria-label="Settings">
           ⚙️
         </Link>
       </header>
@@ -97,7 +97,11 @@ function DayGroups({
   }, [txns]);
 
   const tagged = useMemo(() => txns.map((t) => ({ ...t, category: t.category.slug ?? "other" })), [txns]);
-  const ctx = { timeZone: data.prefs.timezone, dailyPace: data.snapshot?.today.dailyPace ?? 0 };
+  const ctx = {
+    timeZone: data.prefs.timezone,
+    dailyPace: data.snapshot?.today.dailyPace ?? 0,
+    tone: data.stakes ? ("gentle" as const) : data.prefs.personality,
+  };
   const time = new Intl.DateTimeFormat("en-GB", {
     timeZone: data.prefs.timezone,
     hour: "numeric",

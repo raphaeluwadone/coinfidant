@@ -7,6 +7,7 @@ import {
   discoveryProgress,
   type EngineInput,
   type ISODate,
+  stakesHigh,
 } from "@coinfidant/engine";
 import { BadRequestException, ConflictException, NotFoundException } from "@nestjs/common";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
@@ -44,11 +45,14 @@ export async function todayView(ctx: BudgetCtx, now = new Date()) {
     categories: activeCategories(budget),
     budget: { paydayMode: budget.paydayMode, discovery: budget.discovery, everydayEstimate: budget.everydayEstimate },
   };
-  if (!cycle) return { ...base, cycle: null, snapshot: null, transactions: [], discovery: null, adjustable: null };
+  if (!cycle)
+    return { ...base, cycle: null, snapshot: null, transactions: [], discovery: null, adjustable: null, stakes: false };
 
   const today = todayFor(prefs.timezone, now);
   const { input, txns } = await engineInput(tx, budget, cycle, today);
   const snapshot = computeOpenCycle(input);
+  const last = await adjustableCycleOf(tx, budgetId);
+  const borrowedLastCycle = ((last?.snapshot as ClosedCycle | null)?.savings.borrowed ?? 0) > 0;
   const discovery = budget.discovery
     ? discoveryProgress(
         txns.map((t) => ({ ...t, date: t.localDate, type: t.type as "spend" | "refund" })),
@@ -65,6 +69,8 @@ export async function todayView(ctx: BudgetCtx, now = new Date()) {
     topUps: input.topUps ?? [],
     discovery,
     adjustable: await adjustableView(ctx),
+    // Stakes override (M6): repeated savings drains switch every tone to the warm voice.
+    stakes: stakesHigh(snapshot, { borrowedLastCycle }),
   };
 }
 

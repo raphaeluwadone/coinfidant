@@ -37,6 +37,7 @@ export function QuickLog() {
     mutationFn: logTransaction,
     onSuccess: (res) => {
       qc.setQueryData(todayQuery.queryKey, res.today);
+      qc.invalidateQueries({ queryKey: ["growth"] });
       setSaved({ id: res.transaction.id, today: res.today });
     },
   });
@@ -192,7 +193,13 @@ function Confirmation({
   const tone = today.prefs.personality as Tone;
   const slugged = today.transactions.map((t) => ({ ...t, category: t.category.slug ?? "other" }));
   const spend = slugged.find((t) => t.id === saved.id);
-  const tag = spend ? autoTag(spend, slugged, { timeZone: today.prefs.timezone, dailyPace: s.today.dailyPace }) : null;
+  const tag = spend
+    ? autoTag(spend, slugged, {
+        timeZone: today.prefs.timezone,
+        dailyPace: s.today.dailyPace,
+        tone: today.stakes ? "gentle" : tone,
+      })
+    : null;
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -207,7 +214,9 @@ function Confirmation({
       <div className="log__pop">
         <Mascot mood="confirmed" size={72} float={false} />
       </div>
-      <p className="log__reaction">{reactionFor(spend?.category ?? "other", tone, s.today.spendToday < 0)}</p>
+      <p className="log__reaction">
+        {reactionFor(spend?.category ?? "other", tone, s.today.spendToday < 0, { stakes: today.stakes })}
+      </p>
       <div className="card log__result">
         <div className="label">Left today</div>
         <div className="log__left">{formatMoney(Math.max(0, s.today.spendToday), today.currency)}</div>

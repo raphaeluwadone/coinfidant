@@ -30,6 +30,7 @@ import { ScopedDb, type Tx } from "../db/db.module";
 import { bills, budgets, commitments, cycles, cycleTopUps, debts, incomes, sweepChoices, users } from "../db/schema";
 import { BudgetScope, findBudgetId } from "./budget.scope";
 import { createBudget } from "./create";
+import { growthView } from "./growth";
 import { closedCycleView, historyView, receiveSalary, todayView } from "./cycles";
 import { loadBudget, openCycleOf, userPrefs } from "./load";
 
@@ -99,6 +100,11 @@ export class BudgetController {
       const { closed, closedCycleId, learned } = await receiveSalary(ctx, body);
       return { closed, closedCycleId, learned, today: await todayView(ctx) };
     });
+  }
+
+  @Get("growth")
+  growth(@UserId() userId: string) {
+    return this.scope.run(userId, (ctx) => growthView(ctx));
   }
 
   @Get("cycles/history")

@@ -1,4 +1,5 @@
 import { Link, Outlet } from "@tanstack/react-router";
+import { BadgeWatcher } from "./BadgeWatcher";
 import { Mascot } from "./Mascot";
 import "./AppShell.css";
 
@@ -12,6 +13,7 @@ const NAV = [
 export function AppShell() {
   return (
     <div className="shell">
+      <BadgeWatcher />
       <aside className="sidebar">
         <div className="sidebar__brand">
           <Mascot size={34} />

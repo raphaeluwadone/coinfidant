@@ -26,7 +26,15 @@ export type TodayData = {
   discovery: DiscoveryProgress | null;
   /** The last closed cycle's entries, editable until the next salary lands. */
   adjustable: { cycleId: string; startDate: ISODate; endDate: ISODate; transactions: TxnRow[] } | null;
+  /** Stakes override: savings keep getting drained, so every tone uses the warm voice. */
+  stakes: boolean;
 };
+
+/** The tone copy should speak in right now, and whether the stakes override applies. */
+export const voiceOf = (d: Pick<TodayData, "prefs" | "stakes">) => ({
+  tone: d.prefs.personality,
+  stakes: d.stakes,
+});
 
 /** The Payday flow is owed when Payday mode is on and this cycle hasn't shown it yet. */
 export const paydayDue = (d: TodayData) => !!d.budget.paydayMode && !!d.cycle && !d.cycle.paydaySeenAt;

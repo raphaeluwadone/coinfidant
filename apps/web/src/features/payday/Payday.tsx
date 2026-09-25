@@ -1,4 +1,4 @@
-import { formatMoney, type Minor } from "@coinfidant/engine";
+import { formatMoney, type Minor, say } from "@coinfidant/engine";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
@@ -83,6 +83,8 @@ export function Payday() {
   if (!data?.snapshot || !data.cycle || !budgetData) return <main className="flow" aria-busy="true" />;
   const s = data.snapshot;
   const cur = data.currency;
+  const voice = { stakes: data.stakes };
+  const tone = data.prefs.personality;
 
   if (step === 1)
     return (
@@ -91,7 +93,7 @@ export function Payday() {
           💸
         </div>
         <h1 className="flow__title flow__title--xl">Salary landed!</h1>
-        <p className="flow__lead">Before we get excited, let's feed the responsibilities first 🍽️</p>
+        <p className="flow__lead">{say("payday.lead", tone, {}, voice)}</p>
         <span className="flow__tag">{formatMoney(data.cycle.salary, cur)} received</span>
         <div className="flow__spacer" />
         <button className="btn flow__cta" onClick={() => setStep(2)} autoFocus>
@@ -157,7 +159,7 @@ export function Payday() {
       <div className="flow__emoji is-pop" aria-hidden="true">
         🎉
       </div>
-      <h1 className="flow__title">Responsibilities fed. This is yours.</h1>
+      <h1 className="flow__title">{say("payday.reveal", tone, {}, voice)}</h1>
       <section className="flow__hero">
         <div className="flow__hero-label">Safe to spend</div>
         <div className="flow__hero-amount">
