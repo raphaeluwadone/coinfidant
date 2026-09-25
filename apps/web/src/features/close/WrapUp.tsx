@@ -5,6 +5,7 @@ import { cycleQuery, rangeLabel, ratePercent } from "../../lib/cycles";
 import { paydayDue, todayQuery } from "../../lib/today";
 import type { Learned } from "../../lib/transactions";
 import { learnedQueryKey } from "../discovery/Discovery";
+import { CycleCoach } from "./CycleCoach";
 import "../payday/Flow.css";
 import "./WrapUp.css";
 
@@ -87,6 +88,8 @@ export function WrapUp({ id, flow }: { id: string; flow: boolean }) {
           <p>These roll into the new cycle and stay flagged until they're marked paid.</p>
         </section>
       )}
+
+      <CycleCoach cycleId={c.id} />
 
       {c.status === "closed" && (
         <p className="wrap__note">

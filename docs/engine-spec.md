@@ -154,6 +154,9 @@ Only transactions dated inside the open cycle count. Fixed bills are never trans
   carries only aggregates, pre-formatted money, the top 5 categories with shares, event types, the phase, the tone,
   the attack target and the previous review's target. It never carries notes, merchants, individual spends or the
   user's identity.
+  A closed cycle gets a wrap-up read too: behind if it borrowed from savings (or saved less than planned), ahead
+  if weeks swept extra on top of the plan, otherwise on pace. Its payload adds the savings rate, each week's
+  outcome, the whole cycle's top categories, debts still owed and the previous wrap-up's target.
 - **R29 Check-ins.** Tomorrow's allowance is what's left of this week (never below 0) spread over the days after
   today, or next week's daily pace on a week's last day. The evening push always quotes it; drift only pushes when
   pace isn't on track, quoting the week's overspend when there is one; app-only never pushes.

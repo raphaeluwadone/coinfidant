@@ -31,7 +31,11 @@ export function Coach() {
       </header>
 
       {data.current ? (
-        <ReviewCards review={data.current} focus={focus} />
+        <ReviewCards
+          review={data.current}
+          verdict={focus === "this week" ? "THIS WEEK'S VERDICT" : "LAST WEEK'S VERDICT"}
+          target="TARGET FOR NEXT WEEK"
+        />
       ) : (
         <section className="card coach__intro">
           <h2>Want a read on {focus}?</h2>
@@ -87,11 +91,19 @@ export function Coach() {
   );
 }
 
-function ReviewCards({ review: r, focus }: { review: StoredReview; focus: string }) {
+export function ReviewCards({
+  review: r,
+  verdict,
+  target,
+}: {
+  review: Pick<StoredReview, "pace" | "review">;
+  verdict: string;
+  target: string;
+}) {
   return (
     <>
       <section className="card coach__verdict">
-        <div className="coach__eyebrow">{focus === "this week" ? "THIS WEEK'S VERDICT" : "LAST WEEK'S VERDICT"}</div>
+        <div className="coach__eyebrow">{verdict}</div>
         <div className={`coach__label pace-${r.pace}`}>{r.review.verdict.label}</div>
         <p>{r.review.verdict.line}</p>
       </section>
@@ -100,7 +112,7 @@ function ReviewCards({ review: r, focus }: { review: StoredReview; focus: string
         <p>{r.review.lever}</p>
       </section>
       <section className="card coach__target">
-        <div className="coach__eyebrow">🎯 TARGET FOR NEXT WEEK</div>
+        <div className="coach__eyebrow">🎯 {target}</div>
         <p>{r.review.target}</p>
       </section>
       <section className="card coach__long">
@@ -116,5 +128,5 @@ const remainingLabel = (d: CoachData) =>
 
 const when = (h: StoredReview) => {
   const month = new Date(`${h.cycleStart}T00:00:00Z`).toLocaleDateString("en-GB", { timeZone: "UTC", month: "short" });
-  return `${month} cycle · week ${h.weekIndex + 1}`;
+  return h.weekIndex === null ? `${month} cycle wrap-up` : `${month} cycle · week ${h.weekIndex + 1}`;
 };

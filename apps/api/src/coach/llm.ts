@@ -1,5 +1,11 @@
 import { coachReview } from "@coinfidant/contracts";
-import { type CoachPayload, type CoachReview, coachSystemPrompt, type Tone } from "@coinfidant/engine";
+import {
+  type CoachPayload,
+  type CoachReview,
+  coachSystemPrompt,
+  type CycleCoachPayload,
+  type Tone,
+} from "@coinfidant/engine";
 import { Inject, Injectable } from "@nestjs/common";
 import { z } from "zod";
 import { CONFIG, type Config } from "../config";
@@ -9,7 +15,7 @@ export type CoachResult = { review: CoachReview; model: string; inputTokens: num
 /** The seam between the coach and whichever model writes the words. Tests swap in a fake. */
 export interface CoachLlm {
   readonly available: boolean;
-  review(tone: Tone, payload: CoachPayload): Promise<CoachResult>;
+  review(tone: Tone, payload: CoachPayload | CycleCoachPayload): Promise<CoachResult>;
 }
 
 export const COACH_LLM = Symbol("COACH_LLM");
@@ -33,7 +39,7 @@ export class AnthropicCoach implements CoachLlm {
     return !!this.config.ANTHROPIC_API_KEY;
   }
 
-  async review(tone: Tone, payload: CoachPayload): Promise<CoachResult> {
+  async review(tone: Tone, payload: CoachPayload | CycleCoachPayload): Promise<CoachResult> {
     const key = this.config.ANTHROPIC_API_KEY;
     if (!key) throw new CoachLlmError("coach_unavailable");
     let res: Response;
@@ -44,9 +50,9 @@ export class AnthropicCoach implements CoachLlm {
         body: JSON.stringify({
           model: this.config.COACH_MODEL,
           max_tokens: 1024,
-          system: coachSystemPrompt(tone),
+          system: coachSystemPrompt(tone, "kind" in payload ? "cycle" : "week"),
           // Forcing the tool makes the reply structured JSON rather than prose to parse.
-          tools: [{ name: TOOL, description: "Submit the weekly review.", input_schema: inputSchema }],
+          tools: [{ name: TOOL, description: "Submit the review.", input_schema: inputSchema }],
           tool_choice: { type: "tool", name: TOOL },
           messages: [{ role: "user", content: JSON.stringify(payload) }],
         }),

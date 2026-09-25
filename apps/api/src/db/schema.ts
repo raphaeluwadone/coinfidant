@@ -386,7 +386,9 @@ export const adviceReviews = pgTable(
     cycleId: uuid("cycle_id")
       .notNull()
       .references(() => cycles.id, { onDelete: "cascade" }),
-    weekIndex: smallint("week_index").notNull(),
+    /** "week" reads review one week of an open cycle; "cycle" reads wrap up a closed one. */
+    kind: text("kind").notNull().default("week"),
+    weekIndex: smallint("week_index"),
     pace: text("pace").notNull(),
     payload: jsonb("payload").notNull(),
     review: jsonb("review").notNull(),
@@ -399,6 +401,7 @@ export const adviceReviews = pgTable(
     index().on(t.budgetId, t.createdAt),
     index().on(t.cycleId),
     check("advice_reviews_pace", sql`${t.pace} in ('ahead', 'onPace', 'behind')`),
+    check("advice_reviews_kind", sql`(${t.kind} = 'week' and ${t.weekIndex} is not null) or ${t.kind} = 'cycle'`),
     inMyBudgets("advice_reviews"),
   ],
 );

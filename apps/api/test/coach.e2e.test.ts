@@ -119,3 +119,68 @@ describe("coach", () => {
     expect((await b.api.get("/api/coach")).body).toMatchObject({ used: 0, current: null, history: [] });
   });
 });
+
+describe("cycle wrap-up coach", () => {
+  const close = async (api: Awaited<ReturnType<typeof user>>["api"], receivedOn?: string) => {
+    const res = await api.post("/api/cycles/salary", receivedOn ? { receivedOn } : {});
+    expect(res.status).toBe(201);
+    return res.body.closedCycleId as string;
+  };
+
+  it("reads a closed cycle once, allows one more, then stops", async () => {
+    const { api, food } = await user();
+    await api.post("/api/transactions", {
+      amount: NGN(3_000),
+      categoryId: food,
+      note: "jollof with Tunde",
+      date: ago(2),
+    });
+    const id = await close(api);
+
+    expect((await api.get(`/api/coach/cycles/${id}`)).body).toMatchObject({
+      reviewable: true,
+      remaining: 2,
+      current: null,
+    });
+    const first = await api.post(`/api/coach/cycles/${id}/reviews`, {});
+    expect(first.status).toBe(200);
+    expect(first.body).toMatchObject({ used: 1, remaining: 1, current: { review: { verdict: { label: "Read 1" } } } });
+
+    const sent = t.coach.calls[0]![1] as { kind: string; previousReview: unknown };
+    expect(sent.kind).toBe("cycle");
+    expect(sent.previousReview).toBeNull();
+    expect(JSON.stringify(sent)).not.toMatch(/Tunde|jollof/);
+
+    expect((await api.post(`/api/coach/cycles/${id}/reviews`, {})).body.current.review.verdict.label).toBe("Read 1");
+    expect(t.coach.calls).toHaveLength(1);
+    expect((await api.post(`/api/coach/cycles/${id}/reviews`, { fresh: true })).status).toBe(200);
+    expect((await api.post(`/api/coach/cycles/${id}/reviews`, { fresh: true })).status).toBe(429);
+
+    // Wrap-up reads don't eat into the new cycle's weekly reads.
+    expect((await api.get("/api/coach")).body).toMatchObject({ used: 0, remaining: 3 });
+  });
+
+  it("only the latest closed cycle takes new reads, and the next one follows up on it", async () => {
+    const { api } = await user();
+    const older = await close(api, ago(8));
+    await api.post(`/api/coach/cycles/${older}/reviews`, {});
+    const newer = await close(api);
+    expect(newer).not.toBe(older);
+
+    expect((await api.get(`/api/coach/cycles/${older}`)).body).toMatchObject({ reviewable: false, remaining: 0 });
+    expect((await api.post(`/api/coach/cycles/${older}/reviews`, { fresh: true })).status).toBe(409);
+
+    await api.post(`/api/coach/cycles/${newer}/reviews`, {});
+    expect(t.coach.calls[1]![1]).toMatchObject({
+      previousReview: { when: "last cycle", target: "Keep Food under NGN\u00A010,000" },
+    });
+  });
+
+  it("404s for someone else's cycle", async () => {
+    const a = await user();
+    const b = await user();
+    const id = await close(a.api);
+    expect((await b.api.get(`/api/coach/cycles/${id}`)).status).toBe(404);
+    expect((await b.api.post(`/api/coach/cycles/${id}/reviews`, {})).status).toBe(404);
+  });
+});

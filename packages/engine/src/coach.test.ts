@@ -1,6 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { coachFocus, coachPace, coachPayload, coachSystemPrompt, type CoachInput, tidyCoachReview } from "./coach";
-import { computeOpenCycle } from "./cycle";
+import {
+  coachFocus,
+  coachPace,
+  coachPayload,
+  coachSystemPrompt,
+  type CoachInput,
+  cycleCoachPace,
+  cycleCoachPayload,
+  tidyCoachReview,
+} from "./coach";
+import { closeCycle, computeOpenCycle } from "./cycle";
 import type { DiscoveryTxn } from "./discovery";
 import type { EngineInput } from "./types";
 import { TONES } from "./voice";
@@ -119,5 +128,42 @@ describe("R28 coach", () => {
     });
     expect(r.verdict.line).toBe("Nice, really");
     expect(r.lever).toBe("Food, big");
+  });
+
+  it("grades a closed cycle from its savings, not the model", () => {
+    const june = (txns: DiscoveryTxn[]) => closeCycle(engine("2026-06-30", txns), "2026-07-01");
+    expect(cycleCoachPace(june([spend("2026-06-02", 100_000)]))).toBe("ahead");
+    // Every week spent exactly to plan: nothing swept, nothing borrowed.
+    const toPlan = june([]);
+    const weeks = toPlan.weeks.map((w) => spend(w.start, w.budget / 100));
+    expect(cycleCoachPace(june(weeks))).toBe("onPace");
+    expect(cycleCoachPace(june([spend("2026-06-29", 300_000)]))).toBe("behind");
+  });
+
+  it("builds a cycle payload with the rate up front and no raw spends", () => {
+    const txns = [spend("2026-06-02", 50_000), spend("2026-06-20", 20_000, "fun")];
+    const p = cycleCoachPayload({
+      closed: closeCycle(engine("2026-06-30", txns), "2026-07-01"),
+      txns,
+      categories: [
+        { id: "food", name: "Food" },
+        { id: "fun", name: "Fun" },
+      ],
+      tone: "gentle",
+      phase: "attack",
+      discovery: false,
+      pending: [{ name: "OPay", unpaid: NGN(5_000) }],
+      previous: null,
+      money,
+    });
+    expect(p).toMatchObject({ kind: "cycle", spent: "NGN 70,000", stillOwed: [{ name: "OPay", unpaid: "NGN 5,000" }] });
+    expect(p.savings.rate).toMatch(/%$/);
+    expect(p.categories.map((c) => c.category)).toEqual(["Food", "Fun"]);
+    expect(JSON.stringify(p)).not.toMatch(/2026-06-(02|20)/);
+  });
+
+  it("asks for a next-cycle target in a wrap-up", () => {
+    expect(coachSystemPrompt("cheeky", "cycle")).toMatch(/coming pay cycle/);
+    expect(coachSystemPrompt("cheeky")).toMatch(/coming week/);
   });
 });

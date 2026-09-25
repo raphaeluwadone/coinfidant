@@ -105,3 +105,17 @@
   font-size: 14px;
   color: var(--text-soft);
 }
+.coach--wrap {
+  width: 100%;
+  max-width: none;
+}
+/* Secondary here: the wrap-up's own CTA stays the main action. */
+.btn--ghost {
+  background: var(--accent-tint);
+  color: var(--accent-text);
+  box-shadow: none;
+}
+.btn--ghost:hover {
+  background: var(--accent-tint);
+  filter: brightness(1.08);
+}
