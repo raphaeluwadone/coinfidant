@@ -100,6 +100,9 @@ export const budgets = pgTable(
     paydayMode: boolean("payday_mode").notNull().default(false),
     // "No idea" in onboarding: a first cycle of logging only, no judgment.
     discovery: boolean("discovery").notNull().default(false),
+    // The last detected phase, and the one before it while an advance is still to be celebrated.
+    phase: text("phase"),
+    phaseFrom: text("phase_from"),
     createdAt: createdAt(),
   },
   (t) => [
@@ -190,6 +193,8 @@ export const debts = pgTable(
     name: text("name").notNull(),
     creditor: text("creditor").notNull(),
     amountLeft: money("amount_left").notNull(),
+    // What was owed when the debt was added, so progress bars know how far it has come.
+    originalAmount: money("original_amount").notNull().default(0),
     hasInterest: boolean("has_interest").notNull().default(false),
     plan: text("plan").notNull(),
     dueDate: date("due_date"),

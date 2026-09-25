@@ -1,4 +1,5 @@
 import { laterPaydays } from "./calendar";
+import { attackOrder } from "./phase";
 import type { ISODate } from "./date";
 import type { Minor } from "./money";
 import type { Debt, EngineEvent, EngineInput, PlanBreakdown, Suggestion } from "./types";
@@ -26,7 +27,7 @@ export function sinkingSetAside(f: EngineInput["sinkingFunds"][number], start: I
   return Math.ceil(remaining / cyclesLeft);
 }
 
-/** R5–R10, R24 */
+/** R5–R10, R24, R26 */
 export function computePlan(input: EngineInput, projectedEnd: ISODate) {
   const { salary, start } = input.cycle;
   const s = input.settings;
@@ -39,17 +40,30 @@ export function computePlan(input: EngineInput, projectedEnd: ISODate) {
   const savingsFloor = Math.round((salary * s.minSavingsPercent) / 100);
   let savingsRoom = Math.max(0, savingsGoal - savingsFloor);
   const topUp = (id: string) => Math.max(0, input.topUps?.find((t) => t.id === id)?.amount ?? 0);
+  // R26: cleared installment debts keep paying, into the current attack target (snowball).
+  const target = attackOrder(input.debts)[0];
+  const freed = input.debts.reduce(
+    (a, d) => a + (d.amountLeft <= 0 && d.plan.kind === "installments" ? d.plan.perCycle : 0),
+    0,
+  );
+
   const debts = input.debts.map((d) => {
     const base = debtDue(d, start, projectedEnd);
     // R24: an accepted top-up lifts a flexible debt toward its ideal, never past it or the amount left.
-    const due =
+    const withTopUp =
       d.plan.kind === "flexible"
         ? Math.min(base + topUp(d.id), Math.max(base, Math.min(d.plan.ideal, d.amountLeft)))
         : base;
+    const rolledIn = d.id === target?.id ? Math.min(freed, Math.max(0, d.amountLeft - withTopUp)) : 0;
+    const due = withTopUp + rolledIn;
     const fromSavings = Math.min(due, savingsRoom);
     savingsRoom -= fromSavings;
-    return { id: d.id, due, fromSavings, fromFlexible: due - fromSavings };
+    return { id: d.id, due, fromSavings, fromFlexible: due - fromSavings, rolledIn };
   });
+  const dueBeforeSnowball = (id: string) => {
+    const d = debts.find((x) => x.id === id)!;
+    return d.due - d.rolledIn;
+  };
   const fromSavings = debts.reduce((a, d) => a + d.fromSavings, 0);
   const debtTotal = debts.reduce((a, d) => a + d.due, 0);
   const savingsPlanned = savingsGoal - fromSavings;
@@ -89,7 +103,7 @@ export function computePlan(input: EngineInput, projectedEnd: ISODate) {
       ...input.commitments.map((c) => ({ id: c.id, gap: c.ideal - commitments.find((x) => x.id === c.id)!.amount })),
       ...input.debts.flatMap((d) =>
         d.plan.kind === "flexible"
-          ? [{ id: d.id, gap: Math.min(d.plan.ideal, d.amountLeft) - debts.find((x) => x.id === d.id)!.due }]
+          ? [{ id: d.id, gap: Math.min(d.plan.ideal, d.amountLeft) - dueBeforeSnowball(d.id) }]
           : [],
       ),
     ];

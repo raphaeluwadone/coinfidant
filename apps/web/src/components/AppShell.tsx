@@ -1,4 +1,6 @@
+import { useQuery } from "@tanstack/react-query";
 import { Link, Outlet } from "@tanstack/react-router";
+import { todayQuery } from "../lib/today";
 import { BadgeWatcher } from "./BadgeWatcher";
 import { Mascot } from "./Mascot";
 import "./AppShell.css";
@@ -11,8 +13,11 @@ const NAV = [
 ] as const;
 
 export function AppShell() {
+  const { data } = useQuery(todayQuery);
+  // During discovery the phase is still a guess, so the default look stays.
+  const phase = data?.budget.discovery ? undefined : data?.phase?.phase;
   return (
-    <div className="shell">
+    <div className="shell" data-phase={phase}>
       <BadgeWatcher />
       <aside className="sidebar">
         <div className="sidebar__brand">

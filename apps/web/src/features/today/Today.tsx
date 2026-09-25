@@ -19,6 +19,7 @@ import { useEffect, useState } from "react";
 import { Mascot } from "../../components/Mascot";
 import type { SessionUser } from "../../lib/auth";
 import { learnedQueryKey } from "../discovery/Discovery";
+import { JourneyStrip, PhaseCard, phaseLine, PhasePill, WorthKnowing } from "../phases/PhaseParts";
 import { paydayDue, todayQuery, type TodayData } from "../../lib/today";
 import { markSalaryReceived } from "../../lib/transactions";
 import "./Today.css";
@@ -65,6 +66,10 @@ function TodayView({ data, snapshot: s, user }: { data: TodayData; snapshot: Ope
   const daysDone = s.today.strip.filter((d) => d.state === "on" || d.state === "covered" || d.state === "over").length;
   const date = new Date(toDayNum(s.today.date) * 86_400_000);
   const fmtDate = (o: Intl.DateTimeFormatOptions) => date.toLocaleDateString("en-GB", { timeZone: "UTC", ...o });
+  // During discovery the phase is still a guess, so the plain chips stand in for the phase pieces.
+  const phase = learning ? null : data.phase;
+  const flavour = phase ? phaseLine(data, tone.key) : null;
+  const quips = quipsFor(mood, tone.key, { stakes: data.stakes });
 
   return (
     <div className="today">
@@ -82,6 +87,7 @@ function TodayView({ data, snapshot: s, user }: { data: TodayData; snapshot: Ope
           </div>
         </div>
         <div className="today__tools">
+          {phase && <PhasePill phase={phase.phase} />}
           <span className="pill">
             {tone.emoji} {tone.label}
             <span className="pill__suffix"> mode</span>
@@ -94,12 +100,13 @@ function TodayView({ data, snapshot: s, user }: { data: TodayData; snapshot: Ope
 
       {s.cycle.overrunDays > 0 && <SalaryPrompt compact overdue={hasEvent(s, "salaryOverdue")} />}
       {data.discovery && <DiscoveryCard progress={data.discovery} />}
+      {phase && <JourneyStrip phase={phase} />}
 
       <div className="today__grid">
         <section className="card hero">
           <div className="label">You can spend today</div>
           <div className="hero__amount">{formatMoney(Math.max(0, s.today.spendToday), currency)}</div>
-          <Quip key={`${mood}-${tone.key}`} lines={quipsFor(mood, tone.key, { stakes: data.stakes })} />
+          <Quip key={`${mood}-${tone.key}`} lines={flavour ? [quips[0]!, flavour, ...quips.slice(1)] : quips} />
           <div className="stats">
             <div className="stat">
               <div className="stat__label">Left this week</div>
@@ -116,7 +123,7 @@ function TodayView({ data, snapshot: s, user }: { data: TodayData; snapshot: Ope
               )}
             </div>
           </div>
-          <StatusChips snapshot={s} currency={currency} className="chips chips--desktop" />
+          {!phase && <StatusChips snapshot={s} currency={currency} className="chips chips--desktop" />}
         </section>
 
         <section className="card week">
@@ -148,7 +155,17 @@ function TodayView({ data, snapshot: s, user }: { data: TodayData; snapshot: Ope
           </div>
         </section>
 
-        <StatusChips snapshot={s} currency={currency} className="chips chips--mobile" />
+        {phase ? (
+          <>
+            <WorthKnowing data={data} />
+            <PhaseCard data={data} />
+          </>
+        ) : (
+          <>
+            <StatusChips snapshot={s} currency={currency} className="chips chips--mobile" />
+            <WorthKnowing data={data} />
+          </>
+        )}
       </div>
     </div>
   );

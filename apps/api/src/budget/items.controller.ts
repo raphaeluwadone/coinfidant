@@ -20,7 +20,7 @@ import {
   Patch,
   Post,
 } from "@nestjs/common";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import type { AnyPgColumn, PgTable } from "drizzle-orm/pg-core";
 import type { z } from "zod";
 import { UserId } from "../auth/auth.guard";
@@ -124,7 +124,11 @@ export class ItemsController {
     @Param(new ZodPipe(idParam)) p: Id,
     @Body(new ZodPipe(debtInput)) b: z.output<typeof debtInput>,
   ) {
-    return this.update(u, debts, p.id, debtRow(b));
+    // Editing a debt never shrinks its starting point, so progress survives corrections.
+    return this.update(u, debts, p.id, {
+      ...debtRow(b),
+      originalAmount: sql`greatest(${debts.originalAmount}, ${b.amountLeft})`,
+    });
   }
   @Delete("debts/:id") @HttpCode(204) deleteDebt(@UserId() u: string, @Param(new ZodPipe(idParam)) p: Id) {
     return this.remove(u, debts, p.id);

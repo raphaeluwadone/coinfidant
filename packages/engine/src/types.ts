@@ -76,7 +76,8 @@ export type PlanBreakdown = {
   bills: Minor;
   sinking: { id: string; setAside: Minor }[];
   commitments: { id: string; amount: Minor }[];
-  debts: { id: string; due: Minor; fromSavings: Minor; fromFlexible: Minor }[];
+  /** `rolledIn` is the snowball (R26): freed payments from cleared debts landing on this one. */
+  debts: { id: string; due: Minor; fromSavings: Minor; fromFlexible: Minor; rolledIn: Minor }[];
   savingsGoal: Minor;
   savingsPlanned: Minor;
   flexible: Minor;

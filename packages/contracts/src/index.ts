@@ -135,4 +135,26 @@ export const topUpInput = z.object({ amount: minorOrZero });
 export const sweepChoiceInput = z.object({ debtId: z.uuid().nullable() });
 export const weekParam = z.object({ week: z.coerce.number().int().min(0).max(6) });
 
+const insightKey = z.enum([
+  "ahead",
+  "behind",
+  "swept",
+  "spread",
+  "borrowed",
+  "category",
+  "weekday",
+  "streak",
+  "gap",
+  "payday",
+  "target",
+]);
+export const todayQuery = z.object({
+  recent: z
+    .string()
+    .max(200)
+    .optional()
+    .transform((v) => (v ? v.split(",") : []))
+    .pipe(z.array(insightKey).max(11)),
+});
+
 export const MAX_ACTIVE_CATEGORIES = 12;

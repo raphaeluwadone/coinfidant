@@ -5,6 +5,7 @@ import {
   settingsInput,
   setupInput,
   sweepChoiceInput,
+  todayQuery,
   topUpInput,
   weekParam,
 } from "@coinfidant/contracts";
@@ -21,6 +22,7 @@ import {
   Patch,
   Post,
   Put,
+  Query,
 } from "@nestjs/common";
 import { and, eq, isNull } from "drizzle-orm";
 import type { z } from "zod";
@@ -88,9 +90,18 @@ export class BudgetController {
     });
   }
 
+  /** `recent` lists insight keys the viewer saw lately, so today's picks rotate. */
   @Get("today")
-  today(@UserId() userId: string) {
-    return this.scope.run(userId, (ctx) => todayView(ctx));
+  today(@UserId() userId: string, @Query(new ZodPipe(todayQuery)) { recent }: z.output<typeof todayQuery>) {
+    return this.scope.run(userId, (ctx) => todayView(ctx, new Date(), recent));
+  }
+
+  @Post("phase/celebrated")
+  @HttpCode(204)
+  celebrated(@UserId() userId: string) {
+    return this.scope.run(userId, async ({ tx, budgetId }) => {
+      await tx.update(budgets).set({ phaseFrom: null }).where(eq(budgets.id, budgetId));
+    });
   }
 
   @Post("cycles/salary")

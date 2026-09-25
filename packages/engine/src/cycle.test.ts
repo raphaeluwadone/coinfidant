@@ -260,13 +260,17 @@ describe("plan: debts", () => {
 
   it("18. a debt absorbed by savings leaves flexible unchanged", () => {
     const s = computeOpenCycle(input({ debts: [debt({ kind: "installments", perCycle: NGN(15_000) })] }));
-    expect(s.plan.debts).toEqual([{ id: "d1", due: NGN(15_000), fromSavings: NGN(15_000), fromFlexible: 0 }]);
+    expect(s.plan.debts).toEqual([
+      { id: "d1", due: NGN(15_000), fromSavings: NGN(15_000), fromFlexible: 0, rolledIn: 0 },
+    ]);
     expect(s.plan).toMatchObject({ savingsPlanned: NGN(25_000), flexible: NGN(360_000) });
   });
 
   it("19. a debt spilling into flexible stops savings at 5%", () => {
     const s = computeOpenCycle(input({ debts: [debt({ kind: "installments", perCycle: NGN(50_000) })] }));
-    expect(s.plan.debts).toEqual([{ id: "d1", due: NGN(50_000), fromSavings: NGN(20_000), fromFlexible: NGN(30_000) }]);
+    expect(s.plan.debts).toEqual([
+      { id: "d1", due: NGN(50_000), fromSavings: NGN(20_000), fromFlexible: NGN(30_000), rolledIn: 0 },
+    ]);
     expect(s.plan).toMatchObject({ savingsPlanned: NGN(20_000), flexible: NGN(330_000) });
     expect(s.events).toContainEqual({ type: "debtSqueezesSavings", amount: NGN(20_000) });
   });

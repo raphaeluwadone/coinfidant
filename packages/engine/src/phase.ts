@@ -10,10 +10,11 @@ export const PHASES: { key: Phase; label: string; emoji: string; meaning: string
   { key: "build", label: "Build", emoji: "🌱", meaning: "Grow the future." },
 ];
 
-const active = (debts: Debt[]) => debts.filter((d) => d.amountLeft > 0);
+type Rankable = Pick<Debt, "id" | "amountLeft" | "hasInterest">;
+const active = <T extends Rankable>(debts: T[]) => debts.filter((d) => d.amountLeft > 0);
 
 /** R22: debts with interest first, then the smallest balance (snowball). */
-export function attackOrder(debts: Debt[]): Debt[] {
+export function attackOrder<T extends Rankable>(debts: T[]): T[] {
   return active(debts).sort(
     (a, b) => Number(b.hasInterest) - Number(a.hasInterest) || a.amountLeft - b.amountLeft || a.id.localeCompare(b.id),
   );

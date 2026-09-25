@@ -8,6 +8,7 @@ export * from "./cycle";
 export * from "./phase";
 export * from "./discovery";
 export * from "./badges";
+export * from "./insights";
 export * from "./categories";
 export * from "./voice";
 export * from "./copy";

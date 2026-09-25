@@ -120,3 +120,24 @@ describe("addMonths", () => {
     expect(addMonths("2026-11-30", 3)).toBe("2027-02-28");
   });
 });
+
+describe("R26 snowball", () => {
+  const cleared = (id: string, perCycle: number): Debt => ({ ...debt(id, 0, perCycle), amountLeft: 0 });
+
+  it("rolls a cleared installment onto the attack target", () => {
+    const s = computeOpenCycle(base({ debts: [cleared("gone", 45_000), debt("next", 300_000, 10_000)] }));
+    expect(s.plan.debts.find((d) => d.id === "next")).toMatchObject({ due: NGN(55_000), rolledIn: NGN(45_000) });
+    expect(s.plan.debts.find((d) => d.id === "gone")).toMatchObject({ due: 0, rolledIn: 0 });
+  });
+
+  it("never rolls more than the target has left", () => {
+    const s = computeOpenCycle(base({ debts: [cleared("gone", 45_000), debt("next", 20_000, 10_000)] }));
+    expect(s.plan.debts.find((d) => d.id === "next")).toMatchObject({ due: NGN(20_000), rolledIn: NGN(10_000) });
+  });
+
+  it("frees the payment once nothing is left to attack", () => {
+    const s = computeOpenCycle(base({ debts: [cleared("gone", 45_000)] }));
+    expect(s.plan.debts[0]).toMatchObject({ due: 0, rolledIn: 0 });
+    expect(s.plan.flexible).toBe(NGN(400_000 - 60_000 - 40_000));
+  });
+});

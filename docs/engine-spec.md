@@ -138,6 +138,17 @@ Only transactions dated inside the open cycle count. Fixed bills are never trans
   NGN 1,000. At cycle close the figures are the real totals, rounded to NGN 100, and their sum becomes
   `everydayEstimate`.
 
+### Attack and insights
+
+- **R26 Snowball.** A cleared installment debt (amount left 0) keeps its `perCycle` going: it rolls onto the current
+  attack target (R22) as `rolledIn`, capped at what that target has left after its own due. With nothing left to attack
+  the payment is freed. Ideal top-up gaps (R10) ignore rolled-in money.
+- **R27 Insights.** The rules layer turns the open cycle into ranked, structured insights: pace against the week's
+  plan (after 2 days), last week's sweep, spread or borrow, a category above 40% of the week (3+ spends), a weekday
+  averaging 2x the rest (after 10 days), a logging streak of 3+, a logging gap of 2+ days, payday within 3 days, and
+  the attack target. Warnings outrank good news, which outranks information. Keys shown recently are skipped while at
+  least 2 others remain; at most 3 are returned. Discovery drops pace and streak insights.
+
 ### Money
 
 - **R20 Integers.** All amounts are integer minor units. The only division points are R6, R7, R12 and R13, and each

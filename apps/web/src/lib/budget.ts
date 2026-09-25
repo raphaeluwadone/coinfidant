@@ -21,6 +21,9 @@ export type Budget = {
     creditor: string;
     amountLeft: Minor;
     plan: "oneOff" | "installments" | "flexible";
+    perCycle: Minor | null;
+    originalAmount: Minor;
+    hasInterest: boolean;
     minAmount: Minor | null;
     idealAmount: Minor | null;
   }[];

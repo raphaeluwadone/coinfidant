@@ -6,6 +6,7 @@ import {
   daysBetween,
   discoveryProgress,
   type EngineInput,
+  type InsightKey,
   type ISODate,
   stakesHigh,
 } from "@coinfidant/engine";
@@ -13,6 +14,7 @@ import { BadRequestException, ConflictException, NotFoundException } from "@nest
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { budgets, cycles, debts, sinkingFunds } from "../db/schema";
 import type { BudgetCtx } from "./budget.scope";
+import { attackTarget, sweepOffer, todayInsights, trackPhase } from "./insights";
 import {
   activeCategories,
   adjustableCycleOf,
@@ -31,7 +33,7 @@ export type Learned = {
   total: number;
 };
 
-export async function todayView(ctx: BudgetCtx, now = new Date()) {
+export async function todayView(ctx: BudgetCtx, now = new Date(), recent: InsightKey[] = []) {
   const { tx, userId, budgetId } = ctx;
   const [budget, prefs, cycle] = await Promise.all([
     loadBudget(tx, budgetId),
@@ -46,7 +48,20 @@ export async function todayView(ctx: BudgetCtx, now = new Date()) {
     budget: { paydayMode: budget.paydayMode, discovery: budget.discovery, everydayEstimate: budget.everydayEstimate },
   };
   if (!cycle)
-    return { ...base, cycle: null, snapshot: null, transactions: [], discovery: null, adjustable: null, stakes: false };
+    return {
+      ...base,
+      cycle: null,
+      snapshot: null,
+      transactions: [],
+      discovery: null,
+      adjustable: null,
+      stakes: false,
+      phase: null,
+      target: null,
+      sweepOffer: null,
+      insights: [],
+      debtPayments: [],
+    };
 
   const today = todayFor(prefs.timezone, now);
   const { input, txns } = await engineInput(tx, budget, cycle, today);
@@ -67,10 +82,15 @@ export async function todayView(ctx: BudgetCtx, now = new Date()) {
     snapshot,
     transactions: txns,
     topUps: input.topUps ?? [],
+    debtPayments: input.debtPayments,
     discovery,
     adjustable: await adjustableView(ctx),
     // Stakes override (M6): repeated savings drains switch every tone to the warm voice.
     stakes: stakesHigh(snapshot, { borrowedLastCycle }),
+    phase: await trackPhase(tx, budget, input, snapshot),
+    target: attackTarget(budget, input),
+    sweepOffer: sweepOffer(budget, input, snapshot),
+    insights: await todayInsights(tx, budget, input, snapshot, txns, recent),
   };
 }
 
