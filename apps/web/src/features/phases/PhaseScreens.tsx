@@ -1,7 +1,7 @@
 import { attackOrder, formatMoney, type Phase, PHASES, say, sinkingCyclesLeft } from "@coinfidant/engine";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { useMemo } from "react";
+import { Check, X } from "lucide-react";
 import { BackButton } from "../../components/BackButton";
 import { api } from "../../lib/api";
 import { budgetQuery } from "../../lib/budget";
@@ -234,18 +234,32 @@ export function SweepOffer() {
 }
 
 const CHANGES: Record<Phase, string[]> = {
-  stabilise: ["Minimums and bills come first", "Your rent fund gets fed every cycle"],
+  stabilise: ["Minimums and bills come first", "Your big-bill funds get fed every cycle"],
   attack: [
-    "Extra money goes to the most expensive debt first",
-    "A cleared debt's payment rolls onto the next one",
+    "Extra money now goes after your priciest debt",
+    "Each cleared debt passes its payment to the next",
     "Weekly leftovers can go straight at the target",
   ],
-  build: ["Savings go to your goals", "Today tracks your savings rate", "No more boss fights"],
+  build: [
+    "Money shifts from debts to your goals",
+    "Savings rate becomes your headline number",
+    "Support for your people moves toward the ideal amount",
+  ],
 };
 
-const CONFETTI = ["#ef4444", "#f97316", "#22c55e", "#0ea5a0", "#818cf8", "#facc15"];
+const HEADLINE: Record<Phase, string> = {
+  stabilise: "Stabilise mode on",
+  attack: "Level up: Attack unlocked",
+  build: "Debt-free. Build unlocked",
+};
 
-/** The once-per-advance celebration; the CTA clears it server-side. */
+const SHORT: Record<Phase, string> = {
+  stabilise: "Stop the bleeding",
+  attack: "Hunt the debts down",
+  build: "Grow the future",
+};
+
+/** The once-per-advance celebration, in the new phase's colour; the button clears it server-side. */
 export function PhaseUp() {
   const qc = useQueryClient();
   const navigate = useNavigate();
@@ -257,58 +271,74 @@ export function PhaseUp() {
       navigate({ to: "/" });
     },
   });
-  const pieces = useMemo(
-    () =>
-      Array.from({ length: 24 }, (_, i) => ({
-        left: `${(i * 37) % 100}%`,
-        background: CONFETTI[i % CONFETTI.length],
-        animationDelay: `${((i * 0.29) % 3).toFixed(2)}s`,
-      })),
-    [],
-  );
   const c = data?.phase?.celebrate;
   if (!data || !c) return null;
-  const from = PHASES.find((p) => p.key === c.from)!;
   const to = PHASES.find((p) => p.key === c.to)!;
   const line =
-    c.to === "stabilise" ? to.meaning : say(`phaseup.${c.to}`, data.prefs.personality, {}, { stakes: data.stakes });
+    c.to === "stabilise" ? null : say(`phaseup.${c.to}`, data.prefs.personality, {}, { stakes: data.stakes });
+  const rise = "animate-in fade-in-0 slide-in-from-bottom-3 duration-500 [animation-fill-mode:both]";
+  const after = (ms: number) => ({ animationDelay: `${ms}ms` });
 
   return (
-    <div className="phaseup" data-phase={c.to}>
-      <div className="phaseup__confetti" aria-hidden="true">
-        {pieces.map((s, i) => (
-          <span key={i} style={s} />
-        ))}
-      </div>
-      <div className="phaseup__badge" aria-hidden="true">
-        <span>{to.emoji}</span>
-      </div>
-      <div className="phaseup__from">{from.label.toUpperCase()} COMPLETE</div>
-      <h1>{to.label} unlocked</h1>
-      <p className="phaseup__line">{line}</p>
-      <Card asChild className="phaseup__changes">
-        <section>
-          <h2>What changes</h2>
-          <ul>
-            {CHANGES[c.to].map((x) => (
-              <li key={x}>{x}</li>
-            ))}
-          </ul>
-        </section>
-      </Card>
-      <Button disabled={done.isPending} onClick={() => done.mutate()}>
-        Let's go {to.emoji}
-      </Button>
+    <main
+      data-phase={c.to}
+      className="relative grid min-h-dvh place-items-center bg-primary px-5 py-12 text-primary-foreground"
+    >
       <Button
-        variant="soft"
+        variant="ghost"
         size="icon"
-        className="font-extrabold absolute top-[calc(16px+env(safe-area-inset-top,0px))] left-4 z-[2] right-4 left-auto"
         aria-label="Close"
         disabled={done.isPending}
         onClick={() => done.mutate()}
+        className="absolute top-[calc(16px+env(safe-area-inset-top,0px))] right-4 text-primary-foreground hover:bg-[var(--accent-ink)]/10"
       >
-        ✕
+        <X className="size-5" aria-hidden="true" />
       </Button>
-    </div>
+      <div className="grid w-full max-w-[560px] justify-items-center gap-5 text-center">
+        <span className={`text-xs font-bold tracking-[0.3em] uppercase opacity-75 ${rise}`}>Level up</span>
+        <span
+          aria-hidden="true"
+          className="grid size-36 animate-in place-items-center rounded-[32px] bg-[var(--accent-ink)]/10 zoom-in-50 duration-700"
+        >
+          <span className="grid size-24 place-items-center rounded-full border-2 border-[var(--accent-ink)]/25 text-6xl">
+            {to.emoji}
+          </span>
+        </span>
+        <h1
+          className={`m-0 font-heading text-[clamp(38px,7vw,56px)] leading-[1.05] font-extrabold tracking-[-0.03em] ${rise}`}
+          style={after(100)}
+        >
+          {HEADLINE[c.to]} {to.emoji}
+        </h1>
+        <p className={`m-0 -mt-2 text-lg font-medium opacity-80 ${rise}`} style={after(150)}>
+          {SHORT[c.to]}
+        </p>
+        <ul className={`m-0 mt-2 grid w-full list-none gap-3 p-0 text-left ${rise}`} style={after(200)}>
+          {CHANGES[c.to].map((x) => (
+            <li
+              key={x}
+              className="flex items-center gap-3 rounded-2xl bg-[var(--accent-ink)]/10 px-4 py-3.5 text-[15px] font-semibold"
+            >
+              <Check className="size-4 shrink-0" strokeWidth={3} aria-hidden="true" />
+              {x}
+            </li>
+          ))}
+        </ul>
+        {line && (
+          <p className={`m-0 max-w-md text-sm opacity-75 ${rise}`} style={after(300)}>
+            {line}
+          </p>
+        )}
+        <button
+          type="button"
+          disabled={done.isPending}
+          onClick={() => done.mutate()}
+          className={`mt-2 h-14 w-full cursor-pointer rounded-2xl border-0 bg-[var(--accent-ink)] font-heading text-lg font-bold text-[var(--accent)] transition-transform active:scale-[0.98] disabled:opacity-60 ${rise}`}
+          style={after(300)}
+        >
+          Let's go
+        </button>
+      </div>
+    </main>
   );
 }
