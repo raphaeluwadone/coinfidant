@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ApiError } from "../../lib/api";
-import { askCycleCoach, cycleCoachQuery } from "../../lib/coach";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { ApiError } from "@/lib/api";
+import { askCycleCoach, cycleCoachQuery } from "@/lib/coach";
 import { ReviewCards } from "../coach/Coach";
 import "../coach/Coach.css";
 
@@ -34,20 +36,25 @@ export function CycleCoach({ cycleId }: { cycleId: string }) {
       {data.current ? (
         <ReviewCards review={data.current} verdict="THIS CYCLE'S VERDICT" target="TARGET FOR NEXT CYCLE" />
       ) : (
-        <div className="card coach__intro">
+        <Card className="coach__intro">
           <h2>Want Pix's take on this cycle?</h2>
           <p>A short wrap-up from your totals and categories, never your notes, plus one target for next cycle.</p>
-        </div>
+        </Card>
       )}
       {data.available && data.reviewable && (data.remaining > 0 || !data.current) && (
         <div className="coach__ask">
-          <button className="btn btn--ghost" disabled={ask.isPending} onClick={() => ask.mutate(!!data.current)}>
+          <Button
+            variant="secondary"
+            className="w-full"
+            disabled={ask.isPending}
+            onClick={() => ask.mutate(!!data.current)}
+          >
             {ask.isPending
               ? "Reading the tea leaves…"
               : data.current
                 ? "Ask for another read 🔮"
                 : "Get the wrap-up read 🔮"}
-          </button>
+          </Button>
         </div>
       )}
       {error && (

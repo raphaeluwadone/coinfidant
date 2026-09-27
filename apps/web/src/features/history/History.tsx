@@ -2,9 +2,11 @@ import { formatMoney, quipsFor, type Tone, todayMood, weekLine } from "@coinfida
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { BackButton } from "../../components/BackButton";
-import { cycleMonth, type CycleSummary, historyQuery, rangeLabel, ratePercent } from "../../lib/cycles";
-import { todayQuery, type TodayData } from "../../lib/today";
+import { BackButton } from "@/components/BackButton";
+import { Card } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cycleMonth, type CycleSummary, historyQuery, rangeLabel, ratePercent } from "@/lib/cycles";
+import { todayQuery, type TodayData } from "@/lib/today";
 import "./History.css";
 
 export function History() {
@@ -16,33 +18,19 @@ export function History() {
     <div className="history">
       <BackButton />
       <h1>History</h1>
-      <div className="history__tabs" role="tablist">
-        <button
-          role="tab"
-          aria-selected={tab === "cycle"}
-          className={tab === "cycle" ? "is-on" : ""}
-          onClick={() => setTab("cycle")}
-        >
-          This cycle
-        </button>
-        <button
-          role="tab"
-          aria-selected={tab === "all"}
-          className={tab === "all" ? "is-on" : ""}
-          onClick={() => setTab("all")}
-        >
-          All time
-        </button>
-      </div>
-
-      {tab === "cycle" ? (
-        <>
+      <Tabs value={tab} onValueChange={(v) => setTab(v as "cycle" | "all")} className="contents">
+        <TabsList className="self-start justify-self-start">
+          <TabsTrigger value="cycle">This cycle</TabsTrigger>
+          <TabsTrigger value="all">All time</TabsTrigger>
+        </TabsList>
+        <TabsContent value="cycle" className="contents">
           {today?.snapshot && <ThisCycle data={today} />}
           <PastCycles cycles={cycles.slice(0, 6)} />
-        </>
-      ) : (
-        <AllTime cycles={cycles} currency={today?.currency ?? "NGN"} />
-      )}
+        </TabsContent>
+        <TabsContent value="all" className="contents">
+          <AllTime cycles={cycles} currency={today?.currency ?? "NGN"} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
@@ -56,38 +44,40 @@ function ThisCycle({ data }: { data: TodayData }) {
   return (
     <section>
       <h2 className="history__label">{cycleMonth(s.cycle.start, s.cycle.projectedEnd).toUpperCase()} CYCLE</h2>
-      <ul className="card history__list">
-        {weeks.map((w) => {
-          const title = `Week ${w.index + 1} · ${w.status === "current" ? "in progress" : rangeLabel(w.start, w.end)}`;
-          let line: string;
-          let right: string;
-          let kind = "";
-          if (w.status === "current") {
-            line = quipsFor(data.discovery ? "onTrack" : todayMood(s), tone, { stakes: data.stakes })[0]!;
-            right = `${money(s.today.leftThisWeek)}`;
-          } else if (w.outcome?.kind === "swept") {
-            line = weekLine(w.outcome, tone, money);
-            right = `${money(w.outcome.amount)} swept`;
-            kind = "is-good";
-          } else {
-            line = weekLine(w.outcome, tone, money);
-            right = `${money(-(w.outcome?.amount ?? 0))} over`;
-            kind = w.outcome?.kind === "over" && w.outcome.floorHit ? "is-floor" : "is-over";
-          }
-          return (
-            <li key={w.index} className="history__row">
-              <div className="history__main">
-                <div className="history__title">{title}</div>
-                <div className={`history__line ${kind}`}>{line}</div>
-              </div>
-              <div className="history__right">
-                {right}
-                {w.status === "current" && <span> left</span>}
-              </div>
-            </li>
-          );
-        })}
-      </ul>
+      <Card asChild className="history__list">
+        <ul>
+          {weeks.map((w) => {
+            const title = `Week ${w.index + 1} · ${w.status === "current" ? "in progress" : rangeLabel(w.start, w.end)}`;
+            let line: string;
+            let right: string;
+            let kind = "";
+            if (w.status === "current") {
+              line = quipsFor(data.discovery ? "onTrack" : todayMood(s), tone, { stakes: data.stakes })[0]!;
+              right = `${money(s.today.leftThisWeek)}`;
+            } else if (w.outcome?.kind === "swept") {
+              line = weekLine(w.outcome, tone, money);
+              right = `${money(w.outcome.amount)} swept`;
+              kind = "is-good";
+            } else {
+              line = weekLine(w.outcome, tone, money);
+              right = `${money(-(w.outcome?.amount ?? 0))} over`;
+              kind = w.outcome?.kind === "over" && w.outcome.floorHit ? "is-floor" : "is-over";
+            }
+            return (
+              <li key={w.index} className="history__row">
+                <div className="history__main">
+                  <div className="history__title">{title}</div>
+                  <div className={`history__line ${kind}`}>{line}</div>
+                </div>
+                <div className="history__right">
+                  {right}
+                  {w.status === "current" && <span> left</span>}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      </Card>
     </section>
   );
 }
@@ -97,16 +87,18 @@ function PastCycles({ cycles }: { cycles: CycleSummary[] }) {
   return (
     <section>
       <h2 className="history__label">PAST CYCLES</h2>
-      <ul className="card history__list">
-        {cycles.map((c) => (
-          <li key={c.id}>
-            <Link to="/cycles/$id" params={{ id: c.id }} className="history__row history__row--link">
-              <span className="history__title">{cycleMonth(c.startDate, c.endDate)}</span>
-              <span className="history__rate">{ratePercent(c.savingsRateBp)} saved</span>
-            </Link>
-          </li>
-        ))}
-      </ul>
+      <Card asChild className="history__list">
+        <ul>
+          {cycles.map((c) => (
+            <li key={c.id}>
+              <Link to="/cycles/$id" params={{ id: c.id }} className="history__row history__row--link">
+                <span className="history__title">{cycleMonth(c.startDate, c.endDate)}</span>
+                <span className="history__rate">{ratePercent(c.savingsRateBp)} saved</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </Card>
     </section>
   );
 }
@@ -119,30 +111,32 @@ function AllTime({ cycles, currency }: { cycles: CycleSummary[]; currency: Today
   return (
     <>
       <div className="history__stats">
-        <div className="card history__stat">
+        <Card className="history__stat">
           <div className="history__stat-label">SAVED IN TOTAL</div>
           <div className="history__stat-value">{formatMoney(saved, currency)}</div>
-        </div>
-        <div className="card history__stat">
+        </Card>
+        <Card className="history__stat">
           <div className="history__stat-label">AVERAGE RATE</div>
           <div className="history__stat-value is-good">{ratePercent(avg)}</div>
-        </div>
+        </Card>
       </div>
-      <ul className="card history__list">
-        {cycles.map((c) => (
-          <li key={c.id}>
-            <Link to="/cycles/$id" params={{ id: c.id }} className="history__row history__row--link">
-              <div className="history__main">
-                <div className="history__title">{cycleMonth(c.startDate, c.endDate)}</div>
-                <div className="history__line">
-                  {rangeLabel(c.startDate, c.endDate)} · {formatMoney(c.saved, currency)} saved
+      <Card asChild className="history__list">
+        <ul>
+          {cycles.map((c) => (
+            <li key={c.id}>
+              <Link to="/cycles/$id" params={{ id: c.id }} className="history__row history__row--link">
+                <div className="history__main">
+                  <div className="history__title">{cycleMonth(c.startDate, c.endDate)}</div>
+                  <div className="history__line">
+                    {rangeLabel(c.startDate, c.endDate)} · {formatMoney(c.saved, currency)} saved
+                  </div>
                 </div>
-              </div>
-              <span className="history__rate">{ratePercent(c.savingsRateBp)}</span>
-            </Link>
-          </li>
-        ))}
-      </ul>
+                <span className="history__rate">{ratePercent(c.savingsRateBp)}</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </Card>
     </>
   );
 }

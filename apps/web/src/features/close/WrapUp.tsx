@@ -1,7 +1,8 @@
 import { formatMoney } from "@coinfidant/engine";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { BackButton } from "../../components/BackButton";
+import { BackButton } from "@/components/BackButton";
+import { Button } from "@/components/ui/button";
 import { cycleQuery, rangeLabel, ratePercent } from "../../lib/cycles";
 import { paydayDue, todayQuery } from "../../lib/today";
 import type { Learned } from "../../lib/transactions";
@@ -106,9 +107,9 @@ export function WrapUp({ id, flow }: { id: string; flow: boolean }) {
       )}
 
       <div className="flow__spacer" />
-      <button className="btn flow__cta" onClick={next} autoFocus>
+      <Button className="flow__cta" onClick={next} autoFocus>
         {flow ? "On to the new cycle" : "Back to history"}
-      </button>
+      </Button>
     </main>
   );
 }

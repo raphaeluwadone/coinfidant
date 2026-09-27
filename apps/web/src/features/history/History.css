@@ -11,26 +11,6 @@
   font-weight: 700;
 }
 
-.history__tabs {
-  display: flex;
-  gap: 8px;
-}
-.history__tabs button {
-  padding: 8px 14px;
-  border: 0;
-  border-radius: var(--radius-pill);
-  background: var(--surface-2);
-  color: var(--text-soft);
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-}
-.history__tabs button.is-on {
-  background: var(--accent-text);
-  color: var(--fab-text);
-  font-weight: 700;
-}
-
 .history__label {
   margin: 0 0 8px;
   font-size: 12px;

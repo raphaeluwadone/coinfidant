@@ -1,7 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Mascot } from "../../components/Mascot";
-import { ApiError } from "../../lib/api";
-import { askCoach, type CoachData, coachQuery, type StoredReview } from "../../lib/coach";
+import { Mascot } from "@/components/Mascot";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { ApiError } from "@/lib/api";
+import { askCoach, type CoachData, coachQuery, type StoredReview } from "@/lib/coach";
 import "./Coach.css";
 
 const FAILED: Record<string, string> = {
@@ -37,24 +39,26 @@ export function Coach() {
           target="TARGET FOR NEXT WEEK"
         />
       ) : (
-        <section className="card coach__intro">
-          <h2>Want a read on {focus}?</h2>
-          <p>
-            Pix looks at your weekly totals and category split, never your notes, and tells you what's working and what
-            to aim for next.
-          </p>
-        </section>
+        <Card asChild className="coach__intro">
+          <section>
+            <h2>Want a read on {focus}?</h2>
+            <p>
+              Pix looks at your weekly totals and category split, never your notes, and tells you what's working and
+              what to aim for next.
+            </p>
+          </section>
+        </Card>
       )}
 
       {data.available ? (
         <div className="coach__ask">
-          <button
-            className="btn"
+          <Button
+            className="w-full"
             disabled={ask.isPending || (!!data.current && data.remaining === 0)}
             onClick={() => ask.mutate(!!data.current)}
           >
             {ask.isPending ? "Reading the tea leaves…" : data.current ? "Ask for another read 🔮" : "Get my read 🔮"}
-          </button>
+          </Button>
           <span className="coach__left">{remainingLabel(data)}</span>
         </div>
       ) : (
@@ -71,18 +75,20 @@ export function Coach() {
           <h2>Earlier reads</h2>
           <ul>
             {data.history.map((h) => (
-              <li key={h.id} className="card">
-                <details>
-                  <summary>
-                    <span>{when(h)}</span>
-                    <strong className={`pace-${h.pace}`}>{h.review.verdict.label}</strong>
-                  </summary>
-                  <p>{h.review.verdict.line}</p>
-                  <p>
-                    <strong>Target:</strong> {h.review.target}
-                  </p>
-                </details>
-              </li>
+              <Card asChild key={h.id}>
+                <li>
+                  <details>
+                    <summary>
+                      <span>{when(h)}</span>
+                      <strong className={`pace-${h.pace}`}>{h.review.verdict.label}</strong>
+                    </summary>
+                    <p>{h.review.verdict.line}</p>
+                    <p>
+                      <strong>Target:</strong> {h.review.target}
+                    </p>
+                  </details>
+                </li>
+              </Card>
             ))}
           </ul>
         </section>
@@ -102,23 +108,29 @@ export function ReviewCards({
 }) {
   return (
     <>
-      <section className="card coach__verdict">
-        <div className="coach__eyebrow">{verdict}</div>
-        <div className={`coach__label pace-${r.pace}`}>{r.review.verdict.label}</div>
-        <p>{r.review.verdict.line}</p>
-      </section>
+      <Card asChild className="coach__verdict">
+        <section>
+          <div className="coach__eyebrow">{verdict}</div>
+          <div className={`coach__label pace-${r.pace}`}>{r.review.verdict.label}</div>
+          <p>{r.review.verdict.line}</p>
+        </section>
+      </Card>
       <section className="coach__lever">
         <div className="coach__eyebrow">🔍 BIGGEST LEVER</div>
         <p>{r.review.lever}</p>
       </section>
-      <section className="card coach__target">
-        <div className="coach__eyebrow">🎯 {target}</div>
-        <p>{r.review.target}</p>
-      </section>
-      <section className="card coach__long">
-        <div className="coach__eyebrow">🔭 THE LONG VIEW</div>
-        <p>{r.review.observation}</p>
-      </section>
+      <Card asChild className="coach__target">
+        <section>
+          <div className="coach__eyebrow">🎯 {target}</div>
+          <p>{r.review.target}</p>
+        </section>
+      </Card>
+      <Card asChild className="coach__long">
+        <section>
+          <div className="coach__eyebrow">🔭 THE LONG VIEW</div>
+          <p>{r.review.observation}</p>
+        </section>
+      </Card>
     </>
   );
 }
