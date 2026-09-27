@@ -24,7 +24,7 @@ export function Panel({
   className?: string;
 }) {
   return (
-    <Card asChild className={cn("grid content-start gap-4 p-6", className)}>
+    <Card asChild className={cn("grid grid-cols-[minmax(0,1fr)] content-start gap-4 p-6", className)}>
       <section>
         <div>
           <div className="flex items-baseline justify-between gap-3">
@@ -201,7 +201,7 @@ export function RecentSpends({
       {recent.length === 0 ? (
         <p className="m-0 text-sm text-muted-foreground">Nothing logged yet this cycle.</p>
       ) : (
-        <ul className="m-0 grid list-none gap-4 p-0">
+        <ul className="m-0 grid list-none grid-cols-[minmax(0,1fr)] gap-4 p-0">
           {recent.map((t) => (
             <li key={t.id} className="flex items-center gap-3.5">
               <span

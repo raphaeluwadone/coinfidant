@@ -44,7 +44,7 @@ export function WorthKnowing({ data }: { data: TodayData }) {
   if (!data.insights.length) return null;
   return (
     <Panel title="Worth knowing">
-      <ul className="m-0 grid list-none gap-2.5 p-0">
+      <ul className="m-0 grid list-none grid-cols-[minmax(0,1fr)] gap-2.5 p-0">
         {data.insights.map((x) => (
           <li
             key={x.key}
@@ -167,7 +167,7 @@ export function Checklist({ data, budget, tone }: Props) {
       {rows.length === 0 ? (
         <p className="m-0 text-sm text-muted-foreground">Nothing fixed this cycle.</p>
       ) : (
-        <ul className="m-0 grid list-none p-0">
+        <ul className="m-0 grid list-none grid-cols-[minmax(0,1fr)] p-0">
           {rows.map((r) => (
             <li
               key={r.key}
@@ -325,7 +325,7 @@ export function HitList({ data, budget, tone }: Props) {
   const due = (id: string) => data.snapshot!.plan.debts.find((d) => d.id === id)?.due ?? 0;
   return (
     <Panel title={TODAY_COPY.hitList.title[tone]} sub={TODAY_COPY.hitList.sub[tone]}>
-      <ol className="m-0 grid list-none gap-3 p-0">
+      <ol className="m-0 grid list-none grid-cols-[minmax(0,1fr)] gap-3 p-0">
         {queued.map((d, i) => {
           const original = Math.max(d.originalAmount, d.amountLeft);
           return (
@@ -428,7 +428,7 @@ export function People({ data, budget, tone }: Props) {
   const money = moneyOf(data);
   return (
     <Panel title={TODAY_COPY.people.title[tone]} sub={TODAY_COPY.people.sub[tone]}>
-      <ul className="m-0 grid list-none gap-5 p-0">
+      <ul className="m-0 grid list-none grid-cols-[minmax(0,1fr)] gap-5 p-0">
         {budget.commitments.map((c) => {
           const amount = s.plan.commitments.find((x) => x.id === c.id)?.amount ?? c.minAmount;
           const ideal = Math.max(c.idealAmount, c.minAmount, 1);

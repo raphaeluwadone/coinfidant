@@ -12,11 +12,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { Mascot } from "@/components/Mascot";
+import { PersonalitySwitch } from "@/components/PersonalitySwitch";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import type { SessionUser } from "@/lib/auth";
-import { type BudgetData, budgetQuery, savePreferences } from "@/lib/budget";
+import { budgetQuery } from "@/lib/budget";
 import { paydayDue, todayQuery, type TodayData } from "@/lib/today";
 import { markSalaryReceived } from "@/lib/transactions";
 import { learnedQueryKey } from "../discovery/Discovery";
@@ -92,7 +92,7 @@ function TodayView({ data, snapshot: s, user }: { data: TodayData; snapshot: Ope
   const { main, side } = layout[kind];
 
   return (
-    <div className="mx-auto grid max-w-[1320px] gap-6">
+    <div className="mx-auto grid max-w-[1320px] grid-cols-[minmax(0,1fr)] gap-6">
       <header className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
         <div className="min-w-0">
           <p className="m-0 text-[15px] text-muted-foreground">{date}</p>
@@ -119,49 +119,14 @@ function TodayView({ data, snapshot: s, user }: { data: TodayData; snapshot: Ope
         </Card>
       )}
 
-      <div className="grid items-start gap-6 min-[1200px]:grid-cols-[minmax(0,1fr)_420px]">
-        <div className="grid min-w-0 gap-6">
+      <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-6 min-[1200px]:grid-cols-[minmax(0,1fr)_420px]">
+        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-6">
           <Hero data={data} snapshot={s} budget={budget} kind={kind} tone={tone} quips={lines} />
           {main}
           <WorthKnowing data={data} />
         </div>
-        <div className="grid min-w-0 gap-6">{side}</div>
+        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-6">{side}</div>
       </div>
-    </div>
-  );
-}
-
-/** The tone dial, where the design keeps it: one tap from Today. */
-function PersonalitySwitch({ current }: { current: Tone }) {
-  const qc = useQueryClient();
-  const prefs = useMutation({
-    mutationFn: savePreferences,
-    onMutate: (patch) =>
-      qc.setQueryData<BudgetData | null>(budgetQuery.queryKey, (d) =>
-        d ? { ...d, prefs: { ...d.prefs, ...patch } } : d,
-      ),
-    onSettled: () => qc.invalidateQueries({ queryKey: todayQuery.queryKey }),
-  });
-  return (
-    <div className="hidden gap-2 min-[1000px]:grid">
-      <span className="text-[11px] font-bold tracking-[0.18em] text-muted-foreground uppercase">Personality</span>
-      <ToggleGroup
-        type="single"
-        value={current}
-        onValueChange={(v) => v && prefs.mutate({ personality: v as Tone })}
-        aria-label="Personality"
-        className="border border-border bg-card p-1"
-      >
-        {TONES.map((x) => (
-          <ToggleGroupItem
-            key={x.key}
-            value={x.key}
-            className="px-4 py-2 text-sm data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
-          >
-            {x.emoji} {x.label}
-          </ToggleGroupItem>
-        ))}
-      </ToggleGroup>
     </div>
   );
 }
