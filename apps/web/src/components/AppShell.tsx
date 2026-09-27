@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, Outlet } from "@tanstack/react-router";
-import { todayQuery } from "../lib/today";
+import { Button } from "@/components/ui/button";
+import { todayQuery } from "@/lib/today";
 import { BadgeWatcher } from "./BadgeWatcher";
 import { Mascot } from "./Mascot";
 import "./AppShell.css";
@@ -32,9 +33,9 @@ export function AppShell() {
             </Link>
           ))}
         </nav>
-        <Link to="/log" className="sidebar__log">
-          + Log spend
-        </Link>
+        <Button asChild className="mt-auto h-[46px] text-sm font-extrabold shadow-[0_8px_20px_rgba(99,102,241,0.35)]">
+          <Link to="/log">+ Log spend</Link>
+        </Button>
       </aside>
 
       <div className="shell__main">

@@ -198,22 +198,4 @@
     color: var(--accent-text);
     font-weight: 700;
   }
-  .sidebar__log {
-    margin-top: auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 46px;
-    border-radius: var(--radius-pill);
-    background: var(--accent);
-    color: #fff;
-    font-size: 14px;
-    font-weight: 800;
-    text-decoration: none;
-    box-shadow: 0 8px 20px rgba(99, 102, 241, 0.35);
-    transition: background 0.2s ease;
-  }
-  .sidebar__log:hover {
-    background: var(--accent-hover);
-  }
 }

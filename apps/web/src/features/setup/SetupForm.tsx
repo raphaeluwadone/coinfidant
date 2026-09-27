@@ -1,12 +1,17 @@
 import { computeOpenCycle, cycleStartFor, formatMoney, hasEvent, localDate } from "@coinfidant/engine";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { useMemo, useState, type FormEvent } from "react";
-import { BackButton } from "../../components/BackButton";
-import { Mascot } from "../../components/Mascot";
-import { MoneyInput } from "../../components/MoneyInput";
-import { logout, meQuery } from "../../lib/auth";
-import { type Bill, type BudgetData, budgetQuery, salaryOf, saveSetup } from "../../lib/budget";
+import { type FormEvent, type ReactNode, useMemo, useState } from "react";
+import { BackButton } from "@/components/BackButton";
+import { Mascot } from "@/components/Mascot";
+import { MoneyInput } from "@/components/MoneyInput";
+import { Button } from "@/components/ui/button";
+import { Card, Eyebrow } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
+import { logout, meQuery } from "@/lib/auth";
+import { type Bill, type BudgetData, budgetQuery, salaryOf, saveSetup } from "@/lib/budget";
 import "./SetupForm.css";
 
 const TZ = Intl.DateTimeFormat().resolvedOptions().timeZone || "Africa/Lagos";
@@ -90,96 +95,111 @@ export function SetupForm({ initial }: { initial: BudgetData | null }) {
       </header>
 
       <form className="setup__form" onSubmit={onSubmit}>
-        <section className="card setup__section">
-          <label className="field">
-            <span className="label">Monthly take-home pay</span>
-            <MoneyInput value={salary} onChange={setSalary} required aria-label="Monthly take-home pay" />
-          </label>
-          <label className="field">
-            <span className="label">Payday</span>
-            <select className="select" value={payday} onChange={(e) => setPayday(Number(e.target.value))}>
-              {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
-                <option key={d} value={d}>
-                  {d === 31 ? "Last day of the month" : `${d}${ordinal(d)} of the month`}
-                </option>
-              ))}
-            </select>
-          </label>
-          {!initial && (
-            <label className="field">
-              <span className="label">When did your last salary land?</span>
-              <input
-                className="text-input"
-                type="date"
-                value={lastSalaryOn}
-                max={today}
-                required
-                onChange={(e) => e.target.value && setLastSalaryOn(e.target.value)}
-              />
-            </label>
-          )}
-        </section>
-
-        <section className="card setup__section">
-          <span className="label">Fixed bills</span>
-          {bills.map((b, i) => (
-            <div className="bill-row" key={i}>
-              <input
-                className="text-input"
-                placeholder="Bill name"
-                value={b.name}
-                maxLength={40}
-                onChange={(e) => updateBill(i, { name: e.target.value })}
-                aria-label={`Bill ${i + 1} name`}
-              />
-              <MoneyInput
-                value={b.amount}
-                onChange={(amount) => updateBill(i, { amount })}
-                aria-label={`Bill ${i + 1} amount`}
-              />
-              <button
-                type="button"
-                className="icon-btn"
-                aria-label={`Remove ${b.name || "bill"}`}
-                onClick={() => setBills((bs) => bs.filter((_, k) => k !== i))}
-              >
-                ×
-              </button>
+        <Card asChild className="setup__section">
+          <section>
+            <Field label="Monthly take-home pay">
+              <MoneyInput value={salary} onChange={setSalary} required aria-label="Monthly take-home pay" />
+            </Field>
+            <div className="grid gap-1.5">
+              <Eyebrow>Payday</Eyebrow>
+              <Select value={String(payday)} onValueChange={(v) => setPayday(Number(v))}>
+                <SelectTrigger aria-label="Payday">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="max-h-72">
+                  {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
+                    <SelectItem key={d} value={String(d)}>
+                      {d === 31 ? "Last day of the month" : `${d}${ordinal(d)} of the month`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          ))}
-          <button type="button" className="link-btn" onClick={() => setBills((bs) => [...bs, { name: "", amount: 0 }])}>
-            + Add a bill
-          </button>
-        </section>
-
-        <section className="card setup__section">
-          <div className="setup__row">
-            <span className="label">Save each month</span>
-            <strong>{savingsPercent}%</strong>
-          </div>
-          <input
-            type="range"
-            min={0}
-            max={50}
-            value={savingsPercent}
-            onChange={(e) => setSavings(Number(e.target.value))}
-            aria-label="Savings percent"
-          />
-          {preview && <p className="setup__hint">That's {formatMoney(preview.plan.savingsPlanned)} to Future You.</p>}
-        </section>
-
-        {preview && (
-          <section className={`card setup__preview ${overcommitted ? "is-warn" : ""}`}>
-            {overcommitted ? (
-              <p>Bills and savings are more than your pay. Trim something so there's room to live.</p>
-            ) : (
-              <>
-                <span className="label">You'll have about</span>
-                <strong className="setup__big">{formatMoney(perWeek)}</strong>
-                <span className="setup__hint">a week to spend, {formatMoney(preview.plan.flexible)} this cycle.</span>
-              </>
+            {!initial && (
+              <Field label="When did your last salary land?">
+                <Input
+                  type="date"
+                  value={lastSalaryOn}
+                  max={today}
+                  required
+                  onChange={(e) => e.target.value && setLastSalaryOn(e.target.value)}
+                />
+              </Field>
             )}
           </section>
+        </Card>
+
+        <Card asChild className="setup__section">
+          <section>
+            <Eyebrow>Fixed bills</Eyebrow>
+            {bills.map((b, i) => (
+              <div className="bill-row" key={i}>
+                <Input
+                  placeholder="Bill name"
+                  value={b.name}
+                  maxLength={40}
+                  onChange={(e) => updateBill(i, { name: e.target.value })}
+                  aria-label={`Bill ${i + 1} name`}
+                />
+                <MoneyInput
+                  value={b.amount}
+                  onChange={(amount) => updateBill(i, { amount })}
+                  aria-label={`Bill ${i + 1} amount`}
+                />
+                <Button
+                  variant="soft"
+                  size="icon"
+                  className="text-xl"
+                  aria-label={`Remove ${b.name || "bill"}`}
+                  onClick={() => setBills((bs) => bs.filter((_, k) => k !== i))}
+                >
+                  ×
+                </Button>
+              </div>
+            ))}
+            <Button
+              variant="link"
+              size="inline"
+              className="justify-self-start"
+              onClick={() => setBills((bs) => [...bs, { name: "", amount: 0 }])}
+            >
+              + Add a bill
+            </Button>
+          </section>
+        </Card>
+
+        <Card asChild className="setup__section">
+          <section>
+            <div className="setup__row">
+              <Eyebrow>Save each month</Eyebrow>
+              <strong>{savingsPercent}%</strong>
+            </div>
+            <Slider
+              min={0}
+              max={50}
+              step={1}
+              value={[savingsPercent]}
+              onValueChange={([v]) => v !== undefined && setSavings(v)}
+              aria-label="Savings percent"
+            />
+            {preview && <p className="setup__hint">That's {formatMoney(preview.plan.savingsPlanned)} to Future You.</p>}
+          </section>
+        </Card>
+
+        {preview && (
+          <Card asChild className={`setup__preview ${overcommitted ? "is-warn" : ""}`}>
+            <section>
+              {overcommitted ? (
+                <p>Bills and savings are more than your pay. Trim something so there's room to live.</p>
+              ) : (
+                <>
+                  <Eyebrow>You'll have about</Eyebrow>
+                  <strong className="setup__big">{formatMoney(perWeek)}</strong>
+                  <span className="setup__hint">a week to spend, {formatMoney(preview.plan.flexible)} this cycle.</span>
+                </>
+              )}
+            </section>
+          </Card>
         )}
 
         {error && (
@@ -187,15 +207,16 @@ export function SetupForm({ initial }: { initial: BudgetData | null }) {
             {error}
           </p>
         )}
-        <button className="btn" type="submit" disabled={busy || salary <= 0 || overcommitted}>
+        <Button type="submit" disabled={busy || salary <= 0 || overcommitted}>
           {initial ? "Save plan" : "Start budgeting"}
-        </button>
+        </Button>
       </form>
 
       {initial && (
-        <button
-          type="button"
-          className="link-btn setup__logout"
+        <Button
+          variant="muted"
+          size="inline"
+          className="justify-self-center"
           onClick={async () => {
             await logout();
             qc.clear();
@@ -204,9 +225,18 @@ export function SetupForm({ initial }: { initial: BudgetData | null }) {
           }}
         >
           Log out
-        </button>
+        </Button>
       )}
     </main>
+  );
+}
+
+function Field({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <label className="grid gap-1.5">
+      <Eyebrow>{label}</Eyebrow>
+      {children}
+    </label>
   );
 }
 

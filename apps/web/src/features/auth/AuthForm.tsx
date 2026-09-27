@@ -1,5 +1,7 @@
-import { Mascot } from "../../components/Mascot";
-import { GOOGLE_SIGN_IN_URL } from "../../lib/auth";
+import { Mascot } from "@/components/Mascot";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { GOOGLE_SIGN_IN_URL } from "@/lib/auth";
 import "./AuthForm.css";
 
 const ERRORS: Record<string, string> = {
@@ -16,18 +18,20 @@ export function SignIn({ error }: { error?: string }) {
         <p>A budget that talks back, nicely.</p>
       </div>
 
-      <div className="card auth__form">
+      <Card className="auth__form">
         {error && (
           <p className="auth__error" role="alert">
             {ERRORS[error] ?? ERRORS.google}
           </p>
         )}
-        <a className="btn auth__google" href={GOOGLE_SIGN_IN_URL}>
-          <GoogleMark />
-          Continue with Google
-        </a>
+        <Button asChild variant="surface">
+          <a href={GOOGLE_SIGN_IN_URL}>
+            <GoogleMark />
+            Continue with Google
+          </a>
+        </Button>
         <p className="auth__fine">We only use your name and email. No bank logins, ever.</p>
-      </div>
+      </Card>
     </main>
   );
 }
