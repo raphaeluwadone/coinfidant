@@ -70,13 +70,6 @@
   margin-top: 12px;
   font-weight: 800;
 }
-.flow__cta--quiet {
-  background: var(--surface-2);
-  color: var(--text);
-}
-.flow__cta--quiet:hover {
-  background: var(--border);
-}
 
 /* Payday checklist: one line per row, never wrapping. */
 .feed {
@@ -134,21 +127,6 @@
   gap: 12px;
   width: 100%;
   padding-left: 32px;
-}
-.feed__topup-btn,
-.feed__topup-undo {
-  border: 0;
-  background: none;
-  padding: 0;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-}
-.feed__topup-btn {
-  color: var(--accent-text);
-}
-.feed__topup-undo {
-  color: var(--text-muted);
 }
 .feed__empty {
   padding: 14px;

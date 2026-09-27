@@ -7,6 +7,7 @@ import { billEmoji, creditorEmoji } from "../../lib/emoji";
 import { todayQuery, type TodayData } from "../../lib/today";
 import { markPaydaySeen, setTopUp } from "../../lib/transactions";
 import "./Flow.css";
+import { Button } from "@/components/ui/button";
 
 type Row = {
   key: string;
@@ -96,9 +97,9 @@ export function Payday() {
         <p className="flow__lead">{say("payday.lead", tone, {}, voice)}</p>
         <span className="flow__tag">{formatMoney(data.cycle.salary, cur)} received</span>
         <div className="flow__spacer" />
-        <button className="btn flow__cta" onClick={() => setStep(2)} autoFocus>
+        <Button className="flow__cta" onClick={() => setStep(2)} autoFocus>
           Feed the responsibilities
-        </button>
+        </Button>
       </main>
     );
 
@@ -107,9 +108,15 @@ export function Payday() {
     const total = rows.reduce((a, r) => a + r.amount, 0);
     return (
       <main className="flow">
-        <button type="button" className="back-btn" aria-label="Back" onClick={() => setStep(1)}>
+        <Button
+          variant="soft"
+          size="icon"
+          className="self-start font-extrabold"
+          aria-label="Back"
+          onClick={() => setStep(1)}
+        >
           ←
-        </button>
+        </Button>
         <h1 className="flow__title">Feeding the responsibilities</h1>
         <p className="flow__sub">One by one, before anything else touches this money.</p>
         <ul className="feed">
@@ -124,22 +131,26 @@ export function Payday() {
               {r.topUp && (
                 <div className="feed__topup">
                   {r.topUp.offer > 0 && (
-                    <button
-                      className="feed__topup-btn"
+                    <Button
+                      variant="link"
+                      size="inline"
+                      className="text-xs"
                       disabled={topUp.isPending}
                       onClick={() => topUp.mutate({ id: r.topUp!.id, amount: r.topUp!.accepted + r.topUp!.offer })}
                     >
                       Top up to ideal +{formatMoney(r.topUp.offer, cur)}
-                    </button>
+                    </Button>
                   )}
                   {r.topUp.accepted > 0 && (
-                    <button
-                      className="feed__topup-undo"
+                    <Button
+                      variant="muted"
+                      size="inline"
+                      className="text-xs font-bold"
                       disabled={topUp.isPending}
                       onClick={() => topUp.mutate({ id: r.topUp!.id, amount: 0 })}
                     >
                       Undo top-up
-                    </button>
+                    </Button>
                   )}
                 </div>
               )}
@@ -150,18 +161,24 @@ export function Payday() {
           <div className="flow__total-label">Total fed</div>
           <div className="flow__total-amount">{formatMoney(total, cur)}</div>
         </div>
-        <button className="btn flow__cta" onClick={() => setStep(3)}>
+        <Button className="flow__cta" onClick={() => setStep(3)}>
           Reveal what's left
-        </button>
+        </Button>
       </main>
     );
   }
 
   return (
     <main className="flow flow--center">
-      <button type="button" className="back-btn back-btn--corner" aria-label="Back" onClick={() => setStep(2)}>
+      <Button
+        variant="soft"
+        size="icon"
+        className="font-extrabold absolute top-[calc(16px+env(safe-area-inset-top,0px))] left-4 z-[2]"
+        aria-label="Back"
+        onClick={() => setStep(2)}
+      >
         ←
-      </button>
+      </Button>
       <div className="flow__emoji is-pop" aria-hidden="true">
         🎉
       </div>
@@ -175,9 +192,9 @@ export function Payday() {
         <span className="flow__hero-week">{formatMoney(s.today.week.budget, cur)} this week</span>
       </section>
       <div className="flow__spacer" />
-      <button className="btn flow__cta" onClick={() => finish.mutate()} disabled={finish.isPending}>
+      <Button className="flow__cta" onClick={() => finish.mutate()} disabled={finish.isPending}>
         Let's go 😏
-      </button>
+      </Button>
     </main>
   );
 }

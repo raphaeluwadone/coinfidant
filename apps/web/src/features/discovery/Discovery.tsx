@@ -6,6 +6,7 @@ import { BackButton } from "../../components/BackButton";
 import { paydayDue, todayQuery } from "../../lib/today";
 import type { Learned } from "../../lib/transactions";
 import "../payday/Flow.css";
+import { Button } from "@/components/ui/button";
 
 export const learnedQueryKey = ["discovery-learned"] as const;
 
@@ -29,9 +30,9 @@ export function DiscoveryIntro() {
         </ul>
       </section>
       <div className="flow__spacer" />
-      <button className="btn flow__cta" onClick={() => navigate({ to: "/" })} autoFocus>
+      <Button className="flow__cta" onClick={() => navigate({ to: "/" })} autoFocus>
         Start logging
-      </button>
+      </Button>
     </main>
   );
 }
@@ -90,9 +91,13 @@ export function DiscoveryProgress() {
         </ul>
       )}
       <div className="flow__spacer" />
-      <button className="btn flow__cta flow__cta--quiet" onClick={() => navigate({ to: "/" })}>
+      <Button
+        variant="soft"
+        className="flow__cta text-foreground hover:bg-border"
+        onClick={() => navigate({ to: "/" })}
+      >
         Keep logging
-      </button>
+      </Button>
     </main>
   );
 }
@@ -135,9 +140,9 @@ export function DiscoveryComplete() {
       </section>
       <p className="flow__note">{say("discovery.done", data.prefs.personality)}</p>
       <div className="flow__spacer" />
-      <button className="btn flow__cta" onClick={() => navigate({ to: paydayDue(data) ? "/payday" : "/" })}>
+      <Button className="flow__cta" onClick={() => navigate({ to: paydayDue(data) ? "/payday" : "/" })}>
         See my real plan
-      </button>
+      </Button>
     </main>
   );
 }

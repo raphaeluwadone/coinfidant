@@ -9,6 +9,9 @@ import { creditorEmoji } from "../../lib/emoji";
 import { postponeSweep, todayQuery, type TodayData } from "../../lib/today";
 import { hpPercent } from "./PhaseParts";
 import "./Phases.css";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 /** Attack mode's board: the current target first, then the queue, then the defeated. */
 export function DebtBoard() {
@@ -30,56 +33,68 @@ export function DebtBoard() {
         <h1>Debt board ⚔️</h1>
         <p className="board__sub">Most expensive dies first.{extra > 0 && ` Extra ${money(extra)}/cycle.`}</p>
       </div>
-      {debts.length === 0 && <p className="card">No debts. Nothing to fight.</p>}
+      {debts.length === 0 && (
+        <Card asChild>
+          <p>No debts. Nothing to fight.</p>
+        </Card>
+      )}
       <div className="board__list">
         {active.map((d) => {
           const isTarget = d.id === target?.id;
           const p = planned(d.id);
           const down = hpPercent(d.amountLeft, d.originalAmount);
           return (
-            <section key={d.id} className={`card boss ${isTarget ? "is-target" : ""}`}>
-              <span className="boss__tag">{isTarget ? "🔥 CURRENT TARGET" : "QUEUED"}</span>
-              <div className="boss__row">
-                <strong>
-                  {creditorEmoji(d.creditor)} {d.name}
-                </strong>
-                <strong>{money(d.amountLeft)} HP</strong>
-              </div>
-              <div className="hp" aria-hidden="true">
-                <div
-                  className={`hp__fill ${isTarget ? "is-target" : "is-queued"}`}
-                  style={{ width: `${Math.max(100 - down, 2)}%` }}
-                />
-              </div>
-              <div className="boss__meta">
-                {down}% down
-                {p && p.due > 0 && ` · ${money(p.due)} this cycle`}
-                {p && p.rolledIn > 0 && ` (${money(p.rolledIn)} rolled in)`}
-              </div>
-            </section>
+            <Card asChild key={d.id} className={`boss ${isTarget ? "is-target" : ""}`}>
+              <section>
+                <Badge variant="plain" className="justify-self-start text-[11px] tracking-[0.06em]">
+                  {isTarget ? "🔥 CURRENT TARGET" : "QUEUED"}
+                </Badge>
+                <div className="boss__row">
+                  <strong>
+                    {creditorEmoji(d.creditor)} {d.name}
+                  </strong>
+                  <strong>{money(d.amountLeft)} HP</strong>
+                </div>
+                <div className="hp" aria-hidden="true">
+                  <div
+                    className={`hp__fill ${isTarget ? "is-target" : "is-queued"}`}
+                    style={{ width: `${Math.max(100 - down, 2)}%` }}
+                  />
+                </div>
+                <div className="boss__meta">
+                  {down}% down
+                  {p && p.due > 0 && ` · ${money(p.due)} this cycle`}
+                  {p && p.rolledIn > 0 && ` (${money(p.rolledIn)} rolled in)`}
+                </div>
+              </section>
+            </Card>
           );
         })}
         {defeated.map((d) => (
-          <section key={d.id} className="card boss is-defeated">
-            <span className="boss__tag">DEFEATED</span>
-            <div className="boss__row">
-              <strong>💀 {d.name}</strong>
-              <strong>{money(0)} HP</strong>
-            </div>
-            <div className="hp" aria-hidden="true">
-              <div className="hp__fill is-defeated" style={{ width: "100%" }} />
-            </div>
-            {target && d.plan === "installments" && d.perCycle ? (
-              <div className="boss__meta">
-                {money(d.perCycle)}/cycle rolled into {target.name}
+          <Card asChild key={d.id} className="boss is-defeated">
+            <section>
+              <Badge variant="plain" className="justify-self-start text-[11px] tracking-[0.06em] text-success">
+                DEFEATED
+              </Badge>
+              <div className="boss__row">
+                <strong>💀 {d.name}</strong>
+                <strong>{money(0)} HP</strong>
               </div>
-            ) : null}
-          </section>
+              <div className="hp" aria-hidden="true">
+                <div className="hp__fill is-defeated" style={{ width: "100%" }} />
+              </div>
+              {target && d.plan === "installments" && d.perCycle ? (
+                <div className="boss__meta">
+                  {money(d.perCycle)}/cycle rolled into {target.name}
+                </div>
+              ) : null}
+            </section>
+          </Card>
         ))}
       </div>
-      <Link to="/" className="link-btn">
-        ← Back to Today
-      </Link>
+      <Button asChild variant="link" size="inline">
+        <Link to="/">← Back to Today</Link>
+      </Button>
     </div>
   );
 }
@@ -92,12 +107,12 @@ export function FundDetail({ id }: { id: string }) {
   if (!b || !t) return null;
   if (!fund)
     return (
-      <div className="card">
+      <Card>
         <p>That fund isn't here any more.</p>
-        <Link to="/" className="link-btn">
-          ← Back to Today
-        </Link>
-      </div>
+        <Button asChild variant="link" size="inline">
+          <Link to="/">← Back to Today</Link>
+        </Button>
+      </Card>
     );
   const money = (n: number) => formatMoney(n, t.currency);
   const setAside = t.snapshot?.plan.sinking.find((f) => f.id === id)?.setAside ?? 0;
@@ -135,19 +150,21 @@ export function FundDetail({ id }: { id: string }) {
       <span className={`fund__chip ${onTrack ? "is-ok" : "is-behind"}`}>
         {onTrack ? "On track ✅" : "Falling behind ⚠️"}
       </span>
-      <section className="card fund__rows">
-        <div>
-          <span>Set aside each cycle</span>
-          <strong>{money(setAside)}</strong>
-        </div>
-        <div>
-          <span>Months left</span>
-          <strong>{monthsLeft}</strong>
-        </div>
-      </section>
-      <Link to="/" className="link-btn">
-        ← Back to Today
-      </Link>
+      <Card asChild className="fund__rows">
+        <section>
+          <div>
+            <span>Set aside each cycle</span>
+            <strong>{money(setAside)}</strong>
+          </div>
+          <div>
+            <span>Months left</span>
+            <strong>{monthsLeft}</strong>
+          </div>
+        </section>
+      </Card>
+      <Button asChild variant="link" size="inline">
+        <Link to="/">← Back to Today</Link>
+      </Button>
     </div>
   );
 }
@@ -197,15 +214,17 @@ export function SweepOffer() {
         </button>
       </div>
       {choose.isError && <p role="alert">That didn't go through. Try again?</p>}
-      <button
-        className="link-btn sweep__later"
+      <Button
+        variant="muted"
+        size="inline"
+        className="justify-self-center"
         onClick={() => {
           postponeSweep(data);
           navigate({ to: "/" });
         }}
       >
         Decide later
-      </button>
+      </Button>
     </div>
   );
 }
@@ -263,25 +282,29 @@ export function PhaseUp() {
       <div className="phaseup__from">{from.label.toUpperCase()} COMPLETE</div>
       <h1>{to.label} unlocked</h1>
       <p className="phaseup__line">{line}</p>
-      <section className="card phaseup__changes">
-        <h2>What changes</h2>
-        <ul>
-          {CHANGES[c.to].map((x) => (
-            <li key={x}>{x}</li>
-          ))}
-        </ul>
-      </section>
-      <button className="btn" disabled={done.isPending} onClick={() => done.mutate()}>
+      <Card asChild className="phaseup__changes">
+        <section>
+          <h2>What changes</h2>
+          <ul>
+            {CHANGES[c.to].map((x) => (
+              <li key={x}>{x}</li>
+            ))}
+          </ul>
+        </section>
+      </Card>
+      <Button disabled={done.isPending} onClick={() => done.mutate()}>
         Let's go {to.emoji}
-      </button>
-      <button
-        className="back-btn back-btn--corner phaseup__close"
+      </Button>
+      <Button
+        variant="soft"
+        size="icon"
+        className="font-extrabold absolute top-[calc(16px+env(safe-area-inset-top,0px))] left-4 z-[2] right-4 left-auto"
         aria-label="Close"
         disabled={done.isPending}
         onClick={() => done.mutate()}
       >
         ✕
-      </button>
+      </Button>
     </div>
   );
 }
