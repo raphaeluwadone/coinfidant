@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch --env-file=.env src/main.ts",
+    "dev": "node build.mjs && concurrently -k -n build,api -c gray,magenta \"node build.mjs --watch\" \"node --watch-path=dist --env-file=.env --enable-source-maps dist/main.js\"",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx --env-file=.env src/db/migrate.ts",
     "db:role": "docker compose -f ../../docker-compose.yml exec -T db psql -U coinfidant -d coinfidant -v pw=\"$APP_DB_PASSWORD\" -f - < scripts/create-app-role.sql",
