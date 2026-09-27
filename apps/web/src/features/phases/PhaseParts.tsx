@@ -75,7 +75,7 @@ function Bar({ value, className, fillClass }: { value: number; className?: strin
 }
 
 /** The HP bar: a striped, outlined bar that empties as the debt is paid. */
-function HpBar({ left, label }: { left: number; label: string }) {
+export function HpBar({ left, label }: { left: number; label: string }) {
   return (
     <div
       className="h-3.5 overflow-hidden rounded-full border-2 border-foreground/80 p-0.5"

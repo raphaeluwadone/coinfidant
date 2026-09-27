@@ -11,47 +11,12 @@
   font-size: 12px;
   color: var(--text-muted);
 }
-.hp {
-  height: 10px;
-  margin-top: 8px;
-  border-radius: var(--radius-pill);
-  background: var(--surface-2);
-  overflow: hidden;
-}
-.hp__fill {
-  height: 100%;
-  border-radius: inherit;
-  transition: width 0.6s var(--ease);
-}
-.hp__fill.is-target {
-  background: linear-gradient(90deg, #ef4444, #f97316);
-  animation: hp-pulse 2.4s ease-in-out infinite;
-}
-.hp__fill.is-queued {
-  background: #b45353;
-}
-.hp__fill.is-defeated {
-  background: var(--success);
-}
-@keyframes hp-pulse {
-  50% {
-    opacity: 0.7;
-  }
-}
 
 /* Debt board */
 .board {
   display: grid;
   gap: 16px;
   max-width: 820px;
-}
-.board h1 {
-  margin: 0;
-  font-size: 24px;
-}
-.board__sub {
-  margin: 4px 0 0;
-  color: var(--text-soft);
 }
 .board__list {
   display: grid;

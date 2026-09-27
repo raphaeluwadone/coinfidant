@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cycleMonth, type CycleSummary, historyQuery, rangeLabel, ratePercent } from "@/lib/cycles";
 import { todayQuery, type TodayData } from "@/lib/today";
 import "./History.css";
+import { PageHeader } from "@/components/PageHeader";
 
 export function History() {
   const [tab, setTab] = useState<"cycle" | "all">("cycle");
@@ -17,7 +18,7 @@ export function History() {
   return (
     <div className="history">
       <BackButton />
-      <h1>History</h1>
+      <PageHeader eyebrow="History" title="Weeks and cycles" sub="How each week ended, and what every cycle saved." />
       <Tabs value={tab} onValueChange={(v) => setTab(v as "cycle" | "all")} className="contents">
         <TabsList className="self-start justify-self-start">
           <TabsTrigger value="cycle">This cycle</TabsTrigger>

@@ -3,15 +3,6 @@
   gap: 16px;
   max-width: 560px;
 }
-.coach__head {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.coach__head h1 {
-  margin: 0;
-  font-size: 18px;
-}
 .coach p {
   margin: 0;
 }

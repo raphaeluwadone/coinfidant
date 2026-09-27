@@ -7,11 +7,12 @@ import { api } from "../../lib/api";
 import { budgetQuery } from "../../lib/budget";
 import { creditorEmoji } from "../../lib/emoji";
 import { postponeSweep, todayQuery, type TodayData } from "../../lib/today";
-import { hpPercent } from "./PhaseParts";
+import { HpBar, hpPercent } from "./PhaseParts";
 import "./Phases.css";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, Eyebrow } from "@/components/ui/card";
+import { PageHeader } from "@/components/PageHeader";
 
 /** Attack mode's board: the current target first, then the queue, then the defeated. */
 export function DebtBoard() {
@@ -29,10 +30,11 @@ export function DebtBoard() {
   return (
     <div className="board">
       <BackButton />
-      <div>
-        <h1>Debt board ⚔️</h1>
-        <p className="board__sub">Most expensive dies first.{extra > 0 && ` Extra ${money(extra)}/cycle.`}</p>
-      </div>
+      <PageHeader
+        eyebrow="Debts"
+        title="Debt board ⚔️"
+        sub={`Most expensive dies first.${extra > 0 ? ` Extra ${money(extra)}/cycle.` : ""}`}
+      />
       {debts.length === 0 && (
         <Card asChild>
           <p>No debts. Nothing to fight.</p>
@@ -55,12 +57,7 @@ export function DebtBoard() {
                   </strong>
                   <strong>{money(d.amountLeft)} HP</strong>
                 </div>
-                <div className="hp" aria-hidden="true">
-                  <div
-                    className={`hp__fill ${isTarget ? "is-target" : "is-queued"}`}
-                    style={{ width: `${Math.max(100 - down, 2)}%` }}
-                  />
-                </div>
+                <HpBar left={100 - down} label={`${100 - down}% of ${d.name} left`} />
                 <div className="boss__meta">
                   {down}% down
                   {p && p.due > 0 && ` · ${money(p.due)} this cycle`}
@@ -80,9 +77,7 @@ export function DebtBoard() {
                 <strong>💀 {d.name}</strong>
                 <strong>{money(0)} HP</strong>
               </div>
-              <div className="hp" aria-hidden="true">
-                <div className="hp__fill is-defeated" style={{ width: "100%" }} />
-              </div>
+              <div className="h-3.5 rounded-full bg-success/70" aria-hidden="true" />
               {target && d.plan === "installments" && d.perCycle ? (
                 <div className="boss__meta">
                   {money(d.perCycle)}/cycle rolled into {target.name}

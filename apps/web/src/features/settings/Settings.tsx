@@ -14,6 +14,7 @@ import { todayQuery } from "@/lib/today";
 import { cn } from "@/lib/utils";
 import { Notifications, YourData } from "./AccountSections";
 import { ErrorNote, Row, Section } from "./parts";
+import { PageHeader } from "@/components/PageHeader";
 
 const CURRENCIES = [
   { code: "NGN", name: "Naira" },
@@ -64,7 +65,7 @@ export function Settings() {
   return (
     <div className="mx-auto grid max-w-[560px] content-start gap-[22px]">
       <BackButton />
-      <h1 className="m-0 text-lg font-bold">Settings</h1>
+      <PageHeader eyebrow="Settings" title="Make it yours" />
 
       <Section title="Personality" hint="How much sass do you want?">
         <ToggleGroup

@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { ApiError } from "@/lib/api";
 import { askCoach, type CoachData, coachQuery, type StoredReview } from "@/lib/coach";
 import "./Coach.css";
+import { PageHeader } from "@/components/PageHeader";
 
 const FAILED: Record<string, string> = {
   coach_cap: "That's all the reads for this cycle. Fresh ones arrive with your next salary.",
@@ -27,10 +28,15 @@ export function Coach() {
 
   return (
     <div className="coach">
-      <header className="coach__head">
-        <Mascot size={36} />
-        <h1>Coach</h1>
-      </header>
+      <PageHeader
+        eyebrow="Coach"
+        title={
+          <span className="inline-flex items-center gap-3">
+            <Mascot size={44} float={false} /> Pix's read
+          </span>
+        }
+        sub="Your week, from your totals. Never your notes."
+      />
 
       {data.current ? (
         <ReviewCards

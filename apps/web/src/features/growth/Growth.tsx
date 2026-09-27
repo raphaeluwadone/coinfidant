@@ -5,6 +5,7 @@ import { cycleMonth, ratePercent } from "../../lib/cycles";
 import { type Growth as GrowthData, growthQuery } from "../../lib/growth";
 import { todayQuery } from "../../lib/today";
 import "./Growth.css";
+import { PageHeader } from "@/components/PageHeader";
 
 const TREND = { up: "↑ trending up", down: "↓ dipping", flat: "→ holding steady" } as const;
 
@@ -16,7 +17,11 @@ export function Growth() {
 
   return (
     <div className="growth">
-      <h1>Growth</h1>
+      <PageHeader
+        eyebrow="Growth"
+        title="How you're growing"
+        sub="Savings rate, streaks and the badges you've earned."
+      />
       <RateChart rates={data.rates} trend={data.trend} />
 
       {today.discovery ? (
