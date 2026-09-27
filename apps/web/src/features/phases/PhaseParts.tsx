@@ -2,10 +2,13 @@ import { formatMoney, insightText, type Phase, PHASES, say, type Tone } from "@c
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { api } from "../../lib/api";
-import { budgetQuery } from "../../lib/budget";
-import { billEmoji, creditorEmoji } from "../../lib/emoji";
-import { markInsightsSeen, todayQuery, type TodayData } from "../../lib/today";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { api } from "@/lib/api";
+import { budgetQuery } from "@/lib/budget";
+import { billEmoji, creditorEmoji } from "@/lib/emoji";
+import { markInsightsSeen, todayQuery, type TodayData } from "@/lib/today";
 import "./Phases.css";
 
 const monthName = (iso: string) =>
@@ -46,9 +49,9 @@ export function JourneyStrip({ phase }: { phase: NonNullable<TodayData["phase"]>
 export function PhasePill({ phase }: { phase: Phase }) {
   const p = PHASES.find((x) => x.key === phase)!;
   return (
-    <span className="phase-pill">
+    <Badge variant="accent" className="text-[13px]">
       {p.emoji} {p.label}
-    </span>
+    </Badge>
   );
 }
 
@@ -75,17 +78,19 @@ export function WorthKnowing({ data }: { data: TodayData }) {
   }, [data.insights]);
   if (!data.insights.length) return null;
   return (
-    <section className="card worth">
-      <h2>Worth knowing</h2>
-      <ul>
-        {data.insights.map((x) => (
-          <li key={x.key} className={`worth__item is-${x.severity}`}>
-            <span aria-hidden="true">{x.emoji}</span>
-            <span>{insightText(x, tone, money, { stakes: data.stakes })}</span>
-          </li>
-        ))}
-      </ul>
-    </section>
+    <Card asChild className="worth">
+      <section>
+        <h2>Worth knowing</h2>
+        <ul>
+          {data.insights.map((x) => (
+            <li key={x.key} className={`worth__item is-${x.severity}`}>
+              <span aria-hidden="true">{x.emoji}</span>
+              <span>{insightText(x, tone, money, { stakes: data.stakes })}</span>
+            </li>
+          ))}
+        </ul>
+      </section>
+    </Card>
   );
 }
 
@@ -166,43 +171,47 @@ function Commitments({ data }: { data: TodayData }) {
   ];
 
   return (
-    <section className="card phase-card">
-      <h2>This cycle's commitments</h2>
-      {rows.length === 0 ? (
-        <p className="phase-card__empty">Nothing fixed this cycle.</p>
-      ) : (
-        <ul className="checklist">
-          {rows.map((r) => (
-            <li key={r.key} className={r.done ? "is-done" : ""}>
-              <span className="checklist__dot" aria-hidden="true">
-                {r.done ? "✓" : ""}
-              </span>
-              <span className="checklist__label">
-                {r.fund ? (
-                  <Link to="/funds/$id" params={{ id: r.fund }}>
-                    {r.label}
-                  </Link>
+    <Card asChild className="phase-card">
+      <section>
+        <h2>This cycle's commitments</h2>
+        {rows.length === 0 ? (
+          <p className="phase-card__empty">Nothing fixed this cycle.</p>
+        ) : (
+          <ul className="checklist">
+            {rows.map((r) => (
+              <li key={r.key} className={r.done ? "is-done" : ""}>
+                <span className="checklist__dot" aria-hidden="true">
+                  {r.done ? "✓" : ""}
+                </span>
+                <span className="checklist__label">
+                  {r.fund ? (
+                    <Link to="/funds/$id" params={{ id: r.fund }}>
+                      {r.label}
+                    </Link>
+                  ) : (
+                    r.label
+                  )}{" "}
+                  · {money(r.amount)}
+                </span>
+                {r.payId ? (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="h-auto px-2.5 py-[5px] text-xs"
+                    disabled={pay.isPending}
+                    onClick={() => pay.mutate({ id: r.payId!, amount: r.payAmount! })}
+                  >
+                    Mark paid
+                  </Button>
                 ) : (
-                  r.label
-                )}{" "}
-                · {money(r.amount)}
-              </span>
-              {r.payId ? (
-                <button
-                  className="checklist__pay"
-                  disabled={pay.isPending}
-                  onClick={() => pay.mutate({ id: r.payId!, amount: r.payAmount! })}
-                >
-                  Mark paid
-                </button>
-              ) : (
-                <span className="checklist__status">{r.status}</span>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
+                  <span className="checklist__status">{r.status}</span>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </Card>
   );
 }
 
@@ -215,33 +224,35 @@ function BossFight({ data }: { data: TodayData }) {
   const plan = data.snapshot!.plan.debts.find((d) => d.id === t.id);
   const down = hpPercent(t.amountLeft, t.originalAmount);
   return (
-    <section className="card phase-card">
-      <div className="phase-card__head">
-        <h2>Current target</h2>
-        <span className="phase-card__tag">🔥 Boss fight</span>
-      </div>
-      <div className="boss__row">
-        <strong>{t.name}</strong>
-        <strong>{formatMoney(t.amountLeft, data.currency)} left</strong>
-      </div>
-      <div
-        className="hp"
-        role="progressbar"
-        aria-valuenow={down}
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-label={`${down}% paid off`}
-      >
-        <div className="hp__fill is-target" style={{ width: `${Math.max(100 - down, 2)}%` }} />
-      </div>
-      <div className="boss__meta">
-        {down}% HP down
-        {plan && plan.rolledIn > 0 && ` · ${formatMoney(plan.rolledIn, data.currency)} snowballed in this cycle`}
-      </div>
-      <Link to="/debts" className="link-btn phase-card__link">
-        Debt board →
-      </Link>
-    </section>
+    <Card asChild className="phase-card">
+      <section>
+        <div className="phase-card__head">
+          <h2>Current target</h2>
+          <Badge variant="plain">🔥 Boss fight</Badge>
+        </div>
+        <div className="boss__row">
+          <strong>{t.name}</strong>
+          <strong>{formatMoney(t.amountLeft, data.currency)} left</strong>
+        </div>
+        <div
+          className="hp"
+          role="progressbar"
+          aria-valuenow={down}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label={`${down}% paid off`}
+        >
+          <div className="hp__fill is-target" style={{ width: `${Math.max(100 - down, 2)}%` }} />
+        </div>
+        <div className="boss__meta">
+          {down}% HP down
+          {plan && plan.rolledIn > 0 && ` · ${formatMoney(plan.rolledIn, data.currency)} snowballed in this cycle`}
+        </div>
+        <Button asChild variant="link" size="inline" className="phase-card__link">
+          <Link to="/debts">Debt board →</Link>
+        </Button>
+      </section>
+    </Card>
   );
 }
 
@@ -251,35 +262,37 @@ function Goals({ data }: { data: TodayData }) {
   const rate = s.plan.salary > 0 ? Math.round((s.savings.net / s.plan.salary) * 100) : 0;
   const goals = b?.budget.goals ?? [];
   return (
-    <section className="card phase-card">
-      <div className="phase-card__head">
-        <h2>Savings rate this cycle</h2>
-        <strong className="phase-card__rate">{rate}%</strong>
-      </div>
-      {goals.length === 0 ? (
-        <p className="phase-card__empty">Add a goal and your savings get somewhere to go.</p>
-      ) : (
-        <ul className="goals">
-          {goals.map((g) => {
-            const pct = g.target > 0 ? Math.min(100, Math.round((g.saved / g.target) * 100)) : 0;
-            return (
-              <li key={g.id}>
-                <div className="goals__row">
-                  <span>
-                    {g.emoji} {g.name}
-                  </span>
-                  <span>
-                    {formatMoney(g.saved, data.currency)} / {formatMoney(g.target, data.currency)}
-                  </span>
-                </div>
-                <div className="hp hp--goal" aria-hidden="true">
-                  <div className="hp__fill is-goal" style={{ width: `${pct}%` }} />
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-    </section>
+    <Card asChild className="phase-card">
+      <section>
+        <div className="phase-card__head">
+          <h2>Savings rate this cycle</h2>
+          <strong className="phase-card__rate">{rate}%</strong>
+        </div>
+        {goals.length === 0 ? (
+          <p className="phase-card__empty">Add a goal and your savings get somewhere to go.</p>
+        ) : (
+          <ul className="goals">
+            {goals.map((g) => {
+              const pct = g.target > 0 ? Math.min(100, Math.round((g.saved / g.target) * 100)) : 0;
+              return (
+                <li key={g.id}>
+                  <div className="goals__row">
+                    <span>
+                      {g.emoji} {g.name}
+                    </span>
+                    <span>
+                      {formatMoney(g.saved, data.currency)} / {formatMoney(g.target, data.currency)}
+                    </span>
+                  </div>
+                  <div className="hp hp--goal" aria-hidden="true">
+                    <div className="hp__fill is-goal" style={{ width: `${pct}%` }} />
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+    </Card>
   );
 }

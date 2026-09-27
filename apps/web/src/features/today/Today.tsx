@@ -16,12 +16,15 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Mascot } from "../../components/Mascot";
-import type { SessionUser } from "../../lib/auth";
+import { Mascot } from "@/components/Mascot";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, Eyebrow } from "@/components/ui/card";
+import type { SessionUser } from "@/lib/auth";
+import { paydayDue, todayQuery, type TodayData } from "@/lib/today";
+import { markSalaryReceived } from "@/lib/transactions";
 import { learnedQueryKey } from "../discovery/Discovery";
 import { JourneyStrip, PhaseCard, phaseLine, PhasePill, WorthKnowing } from "../phases/PhaseParts";
-import { paydayDue, todayQuery, type TodayData } from "../../lib/today";
-import { markSalaryReceived } from "../../lib/transactions";
 import "./Today.css";
 
 const DAY_LETTERS = ["M", "T", "W", "T", "F", "S", "S"];
@@ -43,12 +46,10 @@ export function Today({ user }: { user: SessionUser }) {
   if (isError || !data)
     return (
       <div className="today">
-        <div className="card">
-          <p>Couldn't load today. The internet might be napping.</p>
-          <button className="btn" onClick={() => refetch()}>
-            Try again
-          </button>
-        </div>
+        <Card className="grid justify-items-start gap-3">
+          <p className="m-0">Couldn't load today. The internet might be napping.</p>
+          <Button onClick={() => refetch()}>Try again</Button>
+        </Card>
       </div>
     );
 
@@ -88,13 +89,20 @@ function TodayView({ data, snapshot: s, user }: { data: TodayData; snapshot: Ope
         </div>
         <div className="today__tools">
           {phase && <PhasePill phase={phase.phase} />}
-          <span className="pill">
+          <Badge className="min-[900px]:px-3 min-[900px]:py-2">
             {tone.emoji} {tone.label}
             <span className="pill__suffix"> mode</span>
-          </span>
-          <Link to="/settings" className="round-btn" aria-label="Settings">
-            ⚙️
-          </Link>
+          </Badge>
+          <Button
+            asChild
+            variant="surface"
+            size="icon"
+            className="size-[34px] min-[900px]:size-[38px] min-[900px]:text-[17px]"
+          >
+            <Link to="/settings" aria-label="Settings">
+              ⚙️
+            </Link>
+          </Button>
         </div>
       </header>
 
@@ -102,64 +110,70 @@ function TodayView({ data, snapshot: s, user }: { data: TodayData; snapshot: Ope
       {data.discovery && <DiscoveryCard progress={data.discovery} />}
       {phase && <JourneyStrip phase={phase} />}
       {s.today.daysLeftInWeek <= 1 && s.today.week.spent > 0 && (
-        <Link to="/coach" className="card coach-nudge">
-          <span aria-hidden="true">🔮</span>
-          <span>Week's nearly done. Want Pix's read on it? →</span>
-        </Link>
+        <Card asChild className="coach-nudge">
+          <Link to="/coach">
+            <span aria-hidden="true">🔮</span>
+            <span>Week's nearly done. Want Pix's read on it? →</span>
+          </Link>
+        </Card>
       )}
 
       <div className="today__grid">
-        <section className="card hero">
-          <div className="label">You can spend today</div>
-          <div className="hero__amount">{formatMoney(Math.max(0, s.today.spendToday), currency)}</div>
-          <Quip key={`${mood}-${tone.key}`} lines={flavour ? [quips[0]!, flavour, ...quips.slice(1)] : quips} />
-          <div className="stats">
-            <div className="stat">
-              <div className="stat__label">Left this week</div>
-              <div className={`stat__value ${s.today.leftThisWeek < 0 && !learning ? "is-over" : ""}`}>
-                {formatMoney(s.today.leftThisWeek, currency)}
+        <Card asChild className="hero">
+          <section>
+            <Eyebrow className="mb-2 text-[13px] font-semibold tracking-[0.02em]">You can spend today</Eyebrow>
+            <div className="hero__amount">{formatMoney(Math.max(0, s.today.spendToday), currency)}</div>
+            <Quip key={`${mood}-${tone.key}`} lines={flavour ? [quips[0]!, flavour, ...quips.slice(1)] : quips} />
+            <div className="stats">
+              <div className="stat">
+                <div className="stat__label">Left this week</div>
+                <div className={`stat__value ${s.today.leftThisWeek < 0 && !learning ? "is-over" : ""}`}>
+                  {formatMoney(s.today.leftThisWeek, currency)}
+                </div>
+              </div>
+              <div className="stat">
+                <div className="stat__label">Daily avg pace</div>
+                {learning ? (
+                  <div className="stat__value pace--learning">Learning 🔍</div>
+                ) : (
+                  <div className={`stat__value pace--${pace}`}>{PACE_LABEL[pace]}</div>
+                )}
               </div>
             </div>
-            <div className="stat">
-              <div className="stat__label">Daily avg pace</div>
-              {learning ? (
-                <div className="stat__value pace--learning">Learning 🔍</div>
-              ) : (
-                <div className={`stat__value pace--${pace}`}>{PACE_LABEL[pace]}</div>
-              )}
-            </div>
-          </div>
-          {!phase && <StatusChips snapshot={s} currency={currency} className="chips chips--desktop" />}
-        </section>
+            {!phase && <StatusChips snapshot={s} currency={currency} className="chips chips--desktop" />}
+          </section>
+        </Card>
 
-        <section className="card week">
-          <div className="week__head">
-            <h2>This week</h2>
-            <span>
-              {daysDone} of {s.today.week.days} days done
-            </span>
-          </div>
-          <WeekStrip cells={s.today.strip} />
-          <ul className="week__list">
-            {s.today.strip.map((d, i) => (
-              <li key={d.date} className={`week__row is-${d.state}`}>
-                <span className="week__cell">{DAY_LETTERS[i]}</span>
-                <span className="week__label" title={DAY_NAMES[i]}>
-                  {STATE_LABEL[d.state]}
-                </span>
-                {d.spent > 0 && <span className="week__spent">{formatMoney(d.spent, currency)}</span>}
-              </li>
-            ))}
-          </ul>
-          <div className="week__links">
-            <Link to="/transactions" className="link-btn week__all">
-              See transactions →
-            </Link>
-            <Link to="/history" className="link-btn week__all">
-              History →
-            </Link>
-          </div>
-        </section>
+        <Card asChild className="week">
+          <section>
+            <div className="week__head">
+              <h2>This week</h2>
+              <span>
+                {daysDone} of {s.today.week.days} days done
+              </span>
+            </div>
+            <WeekStrip cells={s.today.strip} />
+            <ul className="week__list">
+              {s.today.strip.map((d, i) => (
+                <li key={d.date} className={`week__row is-${d.state}`}>
+                  <span className="week__cell">{DAY_LETTERS[i]}</span>
+                  <span className="week__label" title={DAY_NAMES[i]}>
+                    {STATE_LABEL[d.state]}
+                  </span>
+                  {d.spent > 0 && <span className="week__spent">{formatMoney(d.spent, currency)}</span>}
+                </li>
+              ))}
+            </ul>
+            <div className="week__links">
+              <Button asChild variant="link" size="inline" className="week__all">
+                <Link to="/transactions">See transactions →</Link>
+              </Button>
+              <Button asChild variant="link" size="inline" className="week__all">
+                <Link to="/history">History →</Link>
+              </Button>
+            </div>
+          </section>
+        </Card>
 
         {phase ? (
           <>
@@ -243,29 +257,33 @@ function TodaySkeleton() {
   return (
     <div className="today" aria-busy="true" aria-label="Loading">
       <div className="skeleton" style={{ height: 40, width: 180 }} />
-      <div className="card hero">
+      <Card className="hero">
         <div className="skeleton" style={{ height: 12, width: 140 }} />
         <div className="skeleton" style={{ height: 58, width: "75%", marginTop: 12 }} />
         <div className="skeleton" style={{ height: 16, width: "55%", marginTop: 12 }} />
-      </div>
-      <div className="card">
+      </Card>
+      <Card>
         <div className="skeleton" style={{ height: 34 }} />
-      </div>
+      </Card>
     </div>
   );
 }
 
 function DiscoveryCard({ progress: p }: { progress: DiscoveryProgress }) {
   return (
-    <Link to="/discovery" className="card discovery-card">
-      <span className="discovery-card__badge">
-        🔍 Discovery cycle · Day {p.day} of {p.days}
-      </span>
-      <div className="discovery-card__bar" aria-hidden="true">
-        <div style={{ width: `${p.confidence}%` }} />
-      </div>
-      <span className="discovery-card__meta">{p.confidence}% confident in your numbers · See what we've learned →</span>
-    </Link>
+    <Card asChild className="discovery-card">
+      <Link to="/discovery">
+        <span className="discovery-card__badge">
+          🔍 Discovery cycle · Day {p.day} of {p.days}
+        </span>
+        <div className="discovery-card__bar" aria-hidden="true">
+          <div style={{ width: `${p.confidence}%` }} />
+        </div>
+        <span className="discovery-card__meta">
+          {p.confidence}% confident in your numbers · See what we've learned →
+        </span>
+      </Link>
+    </Card>
   );
 }
 
@@ -286,16 +304,18 @@ function SalaryPrompt({ compact = false, overdue = false }: { compact?: boolean;
     },
   });
   return (
-    <section className={`card salary-prompt ${compact ? "is-compact" : ""}`}>
-      {!compact && <Mascot mood="happy" size={56} />}
-      <div>
-        <h2>{compact && !overdue ? "Payday! 💸 Did your salary land?" : "Did your salary land?"}</h2>
-        <p>Say the word and we'll close off the last cycle and plan the new one.</p>
-      </div>
-      <button className="btn" onClick={() => mark.mutate()} disabled={mark.isPending}>
-        Yes, it landed today
-      </button>
-      {mark.isError && <p role="alert">That didn't go through. Try again?</p>}
-    </section>
+    <Card asChild className={`salary-prompt ${compact ? "is-compact" : ""}`}>
+      <section>
+        {!compact && <Mascot mood="happy" size={56} />}
+        <div>
+          <h2>{compact && !overdue ? "Payday! 💸 Did your salary land?" : "Did your salary land?"}</h2>
+          <p>Say the word and we'll close off the last cycle and plan the new one.</p>
+        </div>
+        <Button onClick={() => mark.mutate()} disabled={mark.isPending}>
+          Yes, it landed today
+        </Button>
+        {mark.isError && <p role="alert">That didn't go through. Try again?</p>}
+      </section>
+    </Card>
   );
 }

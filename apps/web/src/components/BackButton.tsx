@@ -11,6 +11,7 @@ export function BackButton({ fallback = "/", corner = false }: { fallback?: Fall
   const canGoBack = useCanGoBack();
   return (
     <Button
+      variant="soft"
       size="icon"
       aria-label="Back"
       className={cn(
