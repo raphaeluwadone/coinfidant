@@ -1,168 +1,3 @@
-/* Journey strip */
-.journey {
-  margin-bottom: 16px;
-}
-.journey__track {
-  display: flex;
-  align-items: flex-start;
-}
-.journey__step {
-  display: flex;
-  align-items: flex-start;
-  flex: 1;
-}
-.journey__step:first-child {
-  flex: 0 0 auto;
-}
-.journey__line {
-  flex: 1;
-  height: 2px;
-  margin: 17px 6px 0;
-  background: var(--border);
-  overflow: hidden;
-}
-.journey__line span {
-  display: block;
-  height: 100%;
-  background: var(--accent);
-  transform: scaleX(0);
-  transform-origin: left;
-}
-.journey__line span.is-done {
-  animation: journey-fill 0.8s var(--ease) 0.2s forwards;
-}
-@keyframes journey-fill {
-  to {
-    transform: scaleX(1);
-  }
-}
-.journey__node {
-  display: grid;
-  justify-items: center;
-  gap: 6px;
-  min-width: 64px;
-}
-.journey__dot {
-  display: grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: var(--surface-2);
-  font-size: 17px;
-}
-.journey__name {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  color: var(--text-muted);
-}
-.journey__node.is-current .journey__dot {
-  background: var(--accent);
-  box-shadow: 0 0 0 5px var(--accent-tint);
-}
-.journey__node.is-current .journey__name {
-  color: var(--accent-text);
-}
-.journey__node.is-future {
-  opacity: 0.4;
-}
-.journey__caption {
-  margin: 10px 0 0;
-  font-size: 13px;
-  color: var(--text-soft);
-  text-align: center;
-}
-
-/* Worth knowing */
-.worth h2,
-.phase-card h2 {
-  margin: 0 0 12px;
-  font-size: 15px;
-}
-.worth ul {
-  display: grid;
-  gap: 10px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.worth__item {
-  display: flex;
-  gap: 10px;
-  padding: 10px 12px;
-  border-radius: 12px;
-  background: var(--surface-2);
-  font-size: 14px;
-  line-height: 1.4;
-}
-.worth__item.is-warn {
-  box-shadow: inset 3px 0 0 var(--warn);
-}
-.worth__item.is-good {
-  box-shadow: inset 3px 0 0 var(--success);
-}
-
-/* Phase card */
-.phase-card__head {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 8px;
-}
-.phase-card__rate {
-  font-size: 28px;
-}
-.phase-card__empty {
-  margin: 0;
-  color: var(--text-muted);
-  font-size: 14px;
-}
-.phase-card__link {
-  margin-top: 12px;
-}
-
-.checklist {
-  display: grid;
-  gap: 10px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.checklist li {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 14px;
-}
-.checklist__dot {
-  display: grid;
-  place-items: center;
-  flex: 0 0 auto;
-  width: 20px;
-  height: 20px;
-  border: 2px solid var(--border);
-  border-radius: 50%;
-  font-size: 11px;
-  font-weight: 700;
-}
-.checklist li.is-done .checklist__dot {
-  border-color: var(--accent);
-  background: var(--accent);
-  color: var(--fab-text);
-}
-.checklist__label {
-  flex: 1;
-  min-width: 0;
-}
-.checklist__label a {
-  color: inherit;
-}
-.checklist__status {
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
 /* HP and goal bars. Debts stay red-orange, savings stay green, whatever the phase. */
 .boss__row,
 .goals__row {
@@ -183,9 +18,6 @@
   background: var(--surface-2);
   overflow: hidden;
 }
-.hp--goal {
-  height: 8px;
-}
 .hp__fill {
   height: 100%;
   border-radius: inherit;
@@ -201,20 +33,10 @@
 .hp__fill.is-defeated {
   background: var(--success);
 }
-.hp__fill.is-goal {
-  background: var(--success);
-}
 @keyframes hp-pulse {
   50% {
     opacity: 0.7;
   }
-}
-.goals {
-  display: grid;
-  gap: 14px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
 }
 
 /* Debt board */

@@ -1,44 +1,38 @@
 import {
-  type CurrencyCode,
-  type DayCell,
+  type DiscoveryProgress,
   hasEvent,
   type OpenCycle,
-  type DayState,
-  type DiscoveryProgress,
-  formatMoney,
-  PACE_LABEL,
-  paceStatus,
   quipsFor,
   TONES,
+  type Tone,
   todayMood,
   toDayNum,
 } from "@coinfidant/engine";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import type { ReactNode } from "react";
 import { Mascot } from "@/components/Mascot";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, Eyebrow } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
+import { Card } from "@/components/ui/card";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import type { SessionUser } from "@/lib/auth";
+import { type BudgetData, budgetQuery, savePreferences } from "@/lib/budget";
 import { paydayDue, todayQuery, type TodayData } from "@/lib/today";
 import { markSalaryReceived } from "@/lib/transactions";
 import { learnedQueryKey } from "../discovery/Discovery";
-import { JourneyStrip, PhaseCard, phaseLine, PhasePill, WorthKnowing } from "../phases/PhaseParts";
-import "./Today.css";
-
-const DAY_LETTERS = ["M", "T", "W", "T", "F", "S", "S"];
-const DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-
-const STATE_LABEL: Record<DayState, string> = {
-  on: "On budget",
-  covered: "Over, but the week covers it",
-  over: "Over budget",
-  today: "Today",
-  upcoming: "Upcoming",
-  outside: "Outside this cycle",
-};
+import {
+  Checklist,
+  GoalsGrid,
+  HitList,
+  People,
+  phaseLine,
+  SafetyNets,
+  TargetCard,
+  WorthKnowing,
+} from "../phases/PhaseParts";
+import { GlowUp, RecentSpends, WeekChart } from "./Cards";
+import { greeting, TODAY_COPY } from "./copy";
+import { Hero } from "./Hero";
 
 export function Today({ user }: { user: SessionUser }) {
   const { data, isPending, isError, refetch } = useQuery(todayQuery);
@@ -46,12 +40,10 @@ export function Today({ user }: { user: SessionUser }) {
   if (isPending) return <TodaySkeleton />;
   if (isError || !data)
     return (
-      <div className="today">
-        <Card className="grid justify-items-start gap-3">
-          <p className="m-0">Couldn't load today. The internet might be napping.</p>
-          <Button onClick={() => refetch()}>Try again</Button>
-        </Card>
-      </div>
+      <Card className="mx-auto grid max-w-xl justify-items-start gap-3">
+        <p className="m-0">Couldn't load today. The internet might be napping.</p>
+        <Button onClick={() => refetch()}>Try again</Button>
+      </Card>
     );
 
   if (!data.snapshot) return <SalaryPrompt />;
@@ -59,229 +51,145 @@ export function Today({ user }: { user: SessionUser }) {
 }
 
 function TodayView({ data, snapshot: s, user }: { data: TodayData; snapshot: OpenCycle; user: SessionUser }) {
-  const currency = data.currency;
-  const tone = TONES.find((t) => t.key === data.prefs.personality) ?? TONES[1]!;
+  const { data: budgetData } = useQuery(budgetQuery);
+  const budget = budgetData?.budget;
   const learning = !!data.discovery;
-  // Discovery is judgment-free: no pace verdicts or "over" colouring until the cycle has taught us real numbers.
-  const pace = paceStatus(s);
-  const mood = learning ? (s.today.spentToday > 0 ? "onTrack" : "fresh") : todayMood(s);
-  const daysDone = s.today.strip.filter((d) => d.state === "on" || d.state === "covered" || d.state === "over").length;
-  const date = new Date(toDayNum(s.today.date) * 86_400_000);
-  const fmtDate = (o: Intl.DateTimeFormatOptions) => date.toLocaleDateString("en-GB", { timeZone: "UTC", ...o });
-  // During discovery the phase is still a guess, so the plain chips stand in for the phase pieces.
+  // The stakes override keeps every tone warm, the interface copy included.
+  const tone: Tone = data.stakes ? "gentle" : data.prefs.personality;
   const phase = learning ? null : data.phase;
-  const flavour = phase ? phaseLine(data, tone.key) : null;
-  const quips = quipsFor(mood, tone.key, { stakes: data.stakes });
+  const kind = phase?.phase ?? "discovery";
+  const mood = learning ? (s.today.spentToday > 0 ? "onTrack" : "fresh") : todayMood(s);
+  const quips = quipsFor(mood, tone, { stakes: data.stakes });
+  const flavour = phase ? phaseLine(data, tone) : null;
+  const lines = flavour ? [quips[0]!, flavour, ...quips.slice(1)] : quips;
+  const date = new Date(toDayNum(s.today.date) * 86_400_000).toLocaleDateString("en-GB", {
+    timeZone: "UTC",
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+  const usual = s.today.week.days > 0 ? Math.floor(s.today.week.budget / s.today.week.days) : 0;
+  const props = budget ? { data, budget, tone } : null;
+
+  const week = <WeekChart key="week" cells={s.today.strip} usual={usual} currency={data.currency} tone={tone} />;
+  const recent = <RecentSpends key="recent" txns={data.transactions} currency={data.currency} tone={tone} />;
+  const glow = phase ? <GlowUp key="glow" phase={phase} tone={tone} /> : null;
+  const layout: Record<typeof kind, { main: ReactNode[]; side: ReactNode[] }> = {
+    stabilise: {
+      main: [week, props && <SafetyNets key="nets" {...props} />],
+      side: [glow, recent, props && <Checklist key="list" {...props} />],
+    },
+    attack: {
+      main: [week, recent],
+      side: [glow, props && <TargetCard key="target" {...props} />, props && <HitList key="hits" {...props} />],
+    },
+    build: {
+      main: [props && <GoalsGrid key="goals" {...props} />, week],
+      side: [glow, props && <People key="people" {...props} />, recent],
+    },
+    discovery: { main: [week], side: [recent] },
+  };
+  const { main, side } = layout[kind];
 
   return (
-    <div className="today">
-      <header className="today__header">
-        <div className="today__hello">
-          <Mascot size={40} />
-          <div>
-            <h1>Hey {user.displayName ?? "there"} 👋</h1>
-            <p className="today__date today__date--short">
-              {fmtDate({ weekday: "short", month: "short", day: "numeric" })}
-            </p>
-            <p className="today__date today__date--long">
-              {fmtDate({ weekday: "long", month: "long", day: "numeric" })}
-            </p>
-          </div>
+    <div className="mx-auto grid max-w-[1320px] gap-6">
+      <header className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
+        <div className="min-w-0">
+          <p className="m-0 text-[15px] text-muted-foreground">{date}</p>
+          <h1 className="m-0 mt-1 font-heading text-[clamp(32px,5vw,52px)] leading-tight font-extrabold tracking-[-0.02em]">
+            {greeting()}, {user.displayName?.split(" ")[0] ?? "there"}{" "}
+            {TONES.find((x) => x.key === data.prefs.personality)?.emoji}
+          </h1>
+          <p className="m-0 mt-1.5 text-base text-soft">{TODAY_COPY.subtitle[kind][tone]}</p>
         </div>
-        <div className="today__tools">
-          {phase && <PhasePill phase={phase.phase} />}
-          {/* On a phone the phase pill wins the space; the tone is one tap away in Settings. */}
-          <Badge className={cn("min-[900px]:px-3 min-[900px]:py-2", phase && "max-[479px]:hidden")}>
-            {tone.emoji} {tone.label}
-            <span className="pill__suffix"> mode</span>
-          </Badge>
-          <Button
-            asChild
-            variant="surface"
-            size="icon"
-            className="size-[34px] min-[900px]:size-[38px] min-[900px]:text-[17px]"
-          >
-            <Link to="/settings" aria-label="Settings">
-              ⚙️
-            </Link>
-          </Button>
-        </div>
+        <PersonalitySwitch current={data.prefs.personality} />
       </header>
 
       {s.cycle.overrunDays > 0 && <SalaryPrompt compact overdue={hasEvent(s, "salaryOverdue")} />}
       {data.discovery && <DiscoveryCard progress={data.discovery} />}
-      {phase && <JourneyStrip phase={phase} />}
       {s.today.daysLeftInWeek <= 1 && s.today.week.spent > 0 && (
-        <Card asChild className="coach-nudge">
+        <Card
+          asChild
+          className="flex items-center gap-3 border-0 bg-accent px-5 py-4 text-[15px] font-bold text-accent-foreground"
+        >
           <Link to="/coach">
             <span aria-hidden="true">🔮</span>
-            <span>Week's nearly done. Want Pix's read on it? →</span>
+            Week's nearly done. Want Pix's read on it? →
           </Link>
         </Card>
       )}
 
-      <div className="today__grid">
-        <Card asChild className="hero">
-          <section>
-            <Eyebrow className="mb-2 text-[13px] font-semibold tracking-[0.02em]">You can spend today</Eyebrow>
-            <div className="hero__amount">{formatMoney(Math.max(0, s.today.spendToday), currency)}</div>
-            <Quip key={`${mood}-${tone.key}`} lines={flavour ? [quips[0]!, flavour, ...quips.slice(1)] : quips} />
-            <div className="stats">
-              <div className="stat">
-                <div className="stat__label">Left this week</div>
-                <div className={`stat__value ${s.today.leftThisWeek < 0 && !learning ? "is-over" : ""}`}>
-                  {formatMoney(s.today.leftThisWeek, currency)}
-                </div>
-              </div>
-              <div className="stat">
-                <div className="stat__label">Daily avg pace</div>
-                {learning ? (
-                  <div className="stat__value pace--learning">Learning 🔍</div>
-                ) : (
-                  <div className={`stat__value pace--${pace}`}>{PACE_LABEL[pace]}</div>
-                )}
-              </div>
-            </div>
-            {!phase && <StatusChips snapshot={s} currency={currency} className="chips chips--desktop" />}
-          </section>
-        </Card>
-
-        <Card asChild className="week">
-          <section>
-            <div className="week__head">
-              <h2>This week</h2>
-              <span>
-                {daysDone} of {s.today.week.days} days done
-              </span>
-            </div>
-            <WeekStrip cells={s.today.strip} />
-            <ul className="week__list">
-              {s.today.strip.map((d, i) => (
-                <li key={d.date} className={`week__row is-${d.state}`}>
-                  <span className="week__cell">{DAY_LETTERS[i]}</span>
-                  <span className="week__label" title={DAY_NAMES[i]}>
-                    {STATE_LABEL[d.state]}
-                  </span>
-                  {d.spent > 0 && <span className="week__spent">{formatMoney(d.spent, currency)}</span>}
-                </li>
-              ))}
-            </ul>
-            <div className="week__links">
-              <Button asChild variant="link" size="inline" className="week__all">
-                <Link to="/transactions">See transactions →</Link>
-              </Button>
-              <Button asChild variant="link" size="inline" className="week__all">
-                <Link to="/history">History →</Link>
-              </Button>
-            </div>
-          </section>
-        </Card>
-
-        {phase ? (
-          <>
-            <WorthKnowing data={data} />
-            <PhaseCard data={data} />
-          </>
-        ) : (
-          <>
-            <StatusChips snapshot={s} currency={currency} className="chips chips--mobile" />
-            <WorthKnowing data={data} />
-          </>
-        )}
+      <div className="grid items-start gap-6 min-[1200px]:grid-cols-[minmax(0,1fr)_420px]">
+        <div className="grid min-w-0 gap-6">
+          <Hero data={data} snapshot={s} budget={budget} kind={kind} tone={tone} quips={lines} />
+          {main}
+          <WorthKnowing data={data} />
+        </div>
+        <div className="grid min-w-0 gap-6">{side}</div>
       </div>
     </div>
   );
 }
 
-function WeekStrip({ cells }: { cells: DayCell[] }) {
+/** The tone dial, where the design keeps it: one tap from Today. */
+function PersonalitySwitch({ current }: { current: Tone }) {
+  const qc = useQueryClient();
+  const prefs = useMutation({
+    mutationFn: savePreferences,
+    onMutate: (patch) =>
+      qc.setQueryData<BudgetData | null>(budgetQuery.queryKey, (d) =>
+        d ? { ...d, prefs: { ...d.prefs, ...patch } } : d,
+      ),
+    onSettled: () => qc.invalidateQueries({ queryKey: todayQuery.queryKey }),
+  });
   return (
-    <div className="strip" role="list">
-      {cells.map((d, i) => (
-        <div
-          key={d.date}
-          className={`strip__day is-${d.state}`}
-          role="listitem"
-          aria-label={`${DAY_NAMES[i]}: ${STATE_LABEL[d.state]}`}
-        >
-          <div className="strip__bar" style={{ animationDelay: `${0.05 + i * 0.04}s` }} />
-          <span>{DAY_LETTERS[i]}</span>
-        </div>
-      ))}
+    <div className="hidden gap-2 min-[1000px]:grid">
+      <span className="text-[11px] font-bold tracking-[0.18em] text-muted-foreground uppercase">Personality</span>
+      <ToggleGroup
+        type="single"
+        value={current}
+        onValueChange={(v) => v && prefs.mutate({ personality: v as Tone })}
+        aria-label="Personality"
+        className="border border-border bg-card p-1"
+      >
+        {TONES.map((x) => (
+          <ToggleGroupItem
+            key={x.key}
+            value={x.key}
+            className="px-4 py-2 text-sm data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+          >
+            {x.emoji} {x.label}
+          </ToggleGroupItem>
+        ))}
+      </ToggleGroup>
     </div>
-  );
-}
-
-function StatusChips({
-  snapshot: s,
-  currency,
-  className,
-}: {
-  snapshot: OpenCycle;
-  currency: CurrencyCode;
-  className: string;
-}) {
-  const net = s.savings.net;
-  return (
-    <div className={className}>
-      <div className="chip chip--bills">
-        <div className="chip__title">🏠 Bills</div>
-        <div className="chip__sub">
-          {s.plan.bills > 0 ? `${formatMoney(s.plan.bills, currency)} set aside` : "No fixed bills. Lucky you."}
-        </div>
-      </div>
-      <div className="chip chip--goal">
-        <div className="chip__title">🎯 Savings</div>
-        <div className="chip__sub">
-          {s.savings.borrowed > 0 && net < s.savings.planned
-            ? `Borrowed ${formatMoney(s.savings.borrowed, currency)} this cycle`
-            : `+${formatMoney(net, currency)} this cycle`}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function Quip({ lines }: { lines: string[] }) {
-  const [i, setI] = useState(0);
-  useEffect(() => {
-    if (lines.length < 2) return;
-    const t = setInterval(() => setI((n) => (n + 1) % lines.length), 8000);
-    return () => clearInterval(t);
-  }, [lines]);
-  return (
-    <p key={i} className="hero__quip" aria-live="polite">
-      {lines[i % lines.length]}
-    </p>
   );
 }
 
 function TodaySkeleton() {
+  const block = "animate-pulse rounded-2xl bg-secondary";
   return (
-    <div className="today" aria-busy="true" aria-label="Loading">
-      <div className="skeleton" style={{ height: 40, width: 180 }} />
-      <Card className="hero">
-        <div className="skeleton" style={{ height: 12, width: 140 }} />
-        <div className="skeleton" style={{ height: 58, width: "75%", marginTop: 12 }} />
-        <div className="skeleton" style={{ height: 16, width: "55%", marginTop: 12 }} />
-      </Card>
-      <Card>
-        <div className="skeleton" style={{ height: 34 }} />
-      </Card>
+    <div className="mx-auto grid max-w-[1320px] gap-6" aria-busy="true" aria-label="Loading">
+      <div className={`${block} h-24 w-80 max-w-full`} />
+      <div className="grid gap-6 min-[1200px]:grid-cols-[minmax(0,1fr)_420px]">
+        <div className={`${block} h-[380px] rounded-[28px]`} />
+        <div className={`${block} h-[240px]`} />
+      </div>
     </div>
   );
 }
 
 function DiscoveryCard({ progress: p }: { progress: DiscoveryProgress }) {
   return (
-    <Card asChild className="discovery-card">
+    <Card asChild className="grid gap-2.5 px-5 py-4 text-foreground transition-colors hover:bg-secondary">
       <Link to="/discovery">
-        <span className="discovery-card__badge">
+        <span className="text-sm font-bold text-accent-foreground">
           🔍 Discovery cycle · Day {p.day} of {p.days}
         </span>
-        <div className="discovery-card__bar" aria-hidden="true">
-          <div style={{ width: `${p.confidence}%` }} />
-        </div>
-        <span className="discovery-card__meta">
+        <span className="block h-2 overflow-hidden rounded-full bg-secondary" aria-hidden="true">
+          <span className="block h-full rounded-full bg-primary" style={{ width: `${p.confidence}%` }} />
+        </span>
+        <span className="text-[13px] text-muted-foreground">
           {p.confidence}% confident in your numbers · See what we've learned →
         </span>
       </Link>
@@ -306,12 +214,21 @@ function SalaryPrompt({ compact = false, overdue = false }: { compact?: boolean;
     },
   });
   return (
-    <Card asChild className={`salary-prompt ${compact ? "is-compact" : ""}`}>
+    <Card
+      asChild
+      className={
+        compact
+          ? "flex w-full flex-wrap items-center gap-4 border-0 bg-accent px-5 py-4"
+          : "mx-auto grid max-w-xl justify-items-start gap-3"
+      }
+    >
       <section>
         {!compact && <Mascot mood="happy" size={56} />}
-        <div>
-          <h2>{compact && !overdue ? "Payday! 💸 Did your salary land?" : "Did your salary land?"}</h2>
-          <p>Say the word and we'll close off the last cycle and plan the new one.</p>
+        <div className="min-w-0 flex-1">
+          <h2 className="m-0 text-lg">
+            {compact && !overdue ? "Payday! 💸 Did your salary land?" : "Did your salary land?"}
+          </h2>
+          <p className="m-0 mt-1 text-soft">Say the word and we'll close off the last cycle and plan the new one.</p>
         </div>
         <Button onClick={() => mark.mutate()} disabled={mark.isPending}>
           Yes, it landed today
