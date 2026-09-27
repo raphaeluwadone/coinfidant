@@ -179,11 +179,14 @@ export const sinkingFunds = pgTable(
     name: text("name").notNull(),
     target: money("target").notNull(),
     saved: money("saved").notNull().default(0),
-    dueDate: date("due_date").notNull(),
+    // No due date means an open-ended buffer that sets aside a fixed amount each cycle.
+    dueDate: date("due_date"),
+    perCycle: money("per_cycle"),
   },
   (t) => [
     index().on(t.budgetId),
     check("sinking_funds_amounts", sql`${t.target} > 0 and ${t.saved} >= 0`),
+    check("sinking_funds_schedule", sql`${t.dueDate} is not null or ${t.perCycle} > 0`),
     inMyBudgets("sinking_funds"),
   ],
 );
@@ -199,6 +202,8 @@ export const debts = pgTable(
     // What was owed when the debt was added, so progress bars know how far it has come.
     originalAmount: money("original_amount").notNull().default(0),
     hasInterest: boolean("has_interest").notNull().default(false),
+    /** Annual rate in basis points (3200 = 32%). */
+    aprBp: integer("apr_bp"),
     plan: text("plan").notNull(),
     dueDate: date("due_date"),
     perCycle: money("per_cycle"),
@@ -209,6 +214,7 @@ export const debts = pgTable(
   (t) => [
     index().on(t.budgetId),
     check("debts_amount_left", sql`${t.amountLeft} >= 0`),
+    check("debts_apr", sql`${t.aprBp} is null or ${t.aprBp} between 0 and 100000`),
     check(
       "debts_plan_fields",
       sql`(${t.plan} = 'oneOff' and ${t.dueDate} is not null)

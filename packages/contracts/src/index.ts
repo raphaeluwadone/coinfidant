@@ -69,7 +69,18 @@ export const settingsInput = z
   .partial();
 export type SettingsInput = z.input<typeof settingsInput>;
 
-export const sinkingFundInput = z.object({ name, target: minor, saved: minorOrZero.default(0), dueDate: isoDate });
+const sinkingFundFields = z.object({
+  name,
+  target: minor,
+  saved: minorOrZero.default(0),
+  dueDate: isoDate.nullable().default(null),
+  perCycle: minor.nullable().default(null),
+});
+/** A fund either has a due date, or sets aside a fixed amount per cycle. */
+export const sinkingFundInput = sinkingFundFields.refine((f) => f.dueDate !== null || f.perCycle !== null, {
+  message: "a fund needs a due date or an amount per cycle",
+});
+export const sinkingFundPatch = sinkingFundFields.partial();
 
 export const debtPlan = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("oneOff"), due: isoDate }),
@@ -83,6 +94,8 @@ export const debtInput = z.object({
   creditor: name,
   amountLeft: minorOrZero,
   hasInterest: z.boolean().default(false),
+  /** Annual rate in basis points (3200 = 32%). */
+  aprBp: z.int().min(0).max(100_000).nullable().default(null),
   plan: debtPlan,
 });
 export type DebtInput = z.input<typeof debtInput>;

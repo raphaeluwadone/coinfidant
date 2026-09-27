@@ -59,10 +59,7 @@ export function QuickLog() {
       save.mutate({ amount, categoryId: category, note, ...(date && date !== today ? { date } : {}) });
   }, [amount, category, note, save, date, today]);
 
-  const tap = useCallback((key: Key) => {
-    setValue((v) => press(v, key));
-    setNote(undefined);
-  }, []);
+  const tap = useCallback((key: Key) => setValue((v) => press(v, key)), []);
 
   useEffect(() => {
     if (saved) return;
@@ -128,6 +125,16 @@ export function QuickLog() {
           </Button>
         )}
       </div>
+
+      <Input
+        className="log__title mb-3.5 h-11 text-center"
+        placeholder="What was it? (optional)"
+        maxLength={120}
+        value={note ?? ""}
+        onChange={(e) => setNote(e.target.value || undefined)}
+        onKeyDown={(e) => e.key === "Enter" && submit()}
+        aria-label="What was it"
+      />
 
       <ToggleGroup
         type="single"

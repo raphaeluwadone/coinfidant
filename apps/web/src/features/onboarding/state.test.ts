@@ -12,7 +12,7 @@ const full: Answers = {
   salary: NGN(1_000_000),
   expectedPayday: 31,
   bills: [{ name: "Data", amount: NGN(100_000) }],
-  sinkingFunds: [{ name: "Rent", target: NGN(700_000), dueDate: "2027-03-01" }],
+  sinkingFunds: [{ name: "Rent", target: NGN(700_000), dueDate: "2027-03-01", perCycle: null }],
   debts: [
     {
       name: "OPay",

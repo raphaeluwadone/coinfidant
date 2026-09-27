@@ -6,7 +6,7 @@ import {
   type SweepChoice,
   type WeekStart,
 } from "@coinfidant/engine";
-import { and, asc, between, desc, eq } from "drizzle-orm";
+import { and, asc, between, desc, eq, sql } from "drizzle-orm";
 import type { Tx } from "../db/db.module";
 import {
   bills,
@@ -33,7 +33,11 @@ export async function loadBudget(tx: Tx, budgetId: string) {
   const [incomeRows, billRows, fundRows, debtRows, commitmentRows, categoryRows, goalRows] = await Promise.all([
     tx.select().from(incomes).where(eq(incomes.budgetId, budgetId)).orderBy(asc(incomes.name)),
     tx.select().from(bills).where(eq(bills.budgetId, budgetId)).orderBy(asc(bills.name)),
-    tx.select().from(sinkingFunds).where(eq(sinkingFunds.budgetId, budgetId)).orderBy(asc(sinkingFunds.dueDate)),
+    tx
+      .select()
+      .from(sinkingFunds)
+      .where(eq(sinkingFunds.budgetId, budgetId))
+      .orderBy(sql`${sinkingFunds.dueDate} asc nulls last`),
     tx.select().from(debts).where(eq(debts.budgetId, budgetId)).orderBy(asc(debts.createdAt)),
     tx.select().from(commitments).where(eq(commitments.budgetId, budgetId)).orderBy(asc(commitments.name)),
     tx
@@ -174,6 +178,7 @@ export async function engineInput(
       target: f.target,
       saved: f.saved,
       due: f.dueDate,
+      perCycle: f.perCycle,
     })),
     debts: budget.debts.map((d) => ({
       id: d.id,
@@ -181,6 +186,7 @@ export async function engineInput(
       creditor: d.creditor,
       amountLeft: d.amountLeft,
       hasInterest: d.hasInterest,
+      aprBp: d.aprBp,
       plan: debtPlan(d),
     })),
     commitments: budget.commitments.map((c) => ({ id: c.id, name: c.name, min: c.minAmount, ideal: c.idealAmount })),

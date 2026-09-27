@@ -52,6 +52,8 @@ export type TodayData = {
   } | null;
   insights: Insight[];
   debtPayments: { debtId: string; amount: Minor }[];
+  /** The last closed cycle's savings rate in basis points, for "Up from 29% last cycle". */
+  lastRateBp: number | null;
 };
 
 /** The tone copy should speak in right now, and whether the stakes override applies. */

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { allocate, spreadDeficit } from "./alloc";
 import { projectedEnd } from "./calendar";
-import { sinkingCyclesLeft } from "./plan";
+import { sinkingCyclesLeft, sinkingSetAside } from "./plan";
 import { closeCycle, computeOpenCycle } from "./cycle";
 import { weekday } from "./date";
 import { formatMoney } from "./money";
@@ -423,5 +423,21 @@ describe("R7 sinking fund cycles", () => {
     expect(sinkingCyclesLeft("2027-02-01", "2026-09-11", 31)).toBe(6);
     expect(sinkingCyclesLeft("2026-09-20", "2026-09-11", 31)).toBe(1);
     expect(sinkingCyclesLeft("2026-09-01", "2026-09-11", 31)).toBe(0);
+  });
+});
+
+describe("R7 funds without a due date", () => {
+  it("set aside their fixed amount, capped at what's left", () => {
+    const f = (saved: number) => ({
+      id: "buf",
+      name: "Emergency buffer",
+      target: 300_000_00,
+      saved,
+      due: null,
+      perCycle: 20_000_00,
+    });
+    expect(sinkingSetAside(f(0), "2026-09-11", 31)).toBe(20_000_00);
+    expect(sinkingSetAside(f(290_000_00), "2026-09-11", 31)).toBe(10_000_00);
+    expect(sinkingSetAside(f(300_000_00), "2026-09-11", 31)).toBe(0);
   });
 });

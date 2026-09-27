@@ -14,7 +14,14 @@ export type Budget = {
   incomes: { id: string; name: string; amount: Minor; kind: string }[];
   bills: Bill[];
   categories: Category[];
-  sinkingFunds: { id: string; name: string; target: Minor; saved: Minor; dueDate: ISODate }[];
+  sinkingFunds: {
+    id: string;
+    name: string;
+    target: Minor;
+    saved: Minor;
+    dueDate: ISODate | null;
+    perCycle: Minor | null;
+  }[];
   debts: {
     id: string;
     name: string;
@@ -24,6 +31,7 @@ export type Budget = {
     perCycle: Minor | null;
     originalAmount: Minor;
     hasInterest: boolean;
+    aprBp: number | null;
     minAmount: Minor | null;
     idealAmount: Minor | null;
   }[];

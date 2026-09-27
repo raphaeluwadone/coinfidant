@@ -61,6 +61,7 @@ export async function todayView(ctx: BudgetCtx, now = new Date(), recent: Insigh
       sweepOffer: null,
       insights: [],
       debtPayments: [],
+      lastRateBp: null,
     };
 
   const today = todayFor(prefs.timezone, now);
@@ -91,6 +92,8 @@ export async function todayView(ctx: BudgetCtx, now = new Date(), recent: Insigh
     target: attackTarget(budget, input),
     sweepOffer: sweepOffer(budget, input, snapshot),
     insights: await todayInsights(tx, budget, input, snapshot, txns, recent),
+    // Build's hero compares against it ("Up from 29% last cycle").
+    lastRateBp: (last?.snapshot as ClosedCycle | null)?.savingsRateBp ?? null,
   };
 }
 

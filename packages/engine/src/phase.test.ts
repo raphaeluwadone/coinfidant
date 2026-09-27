@@ -141,3 +141,21 @@ describe("R26 snowball", () => {
     expect(s.plan.flexible).toBe(NGN(400_000 - 60_000 - 40_000));
   });
 });
+
+describe("R22 with APR", () => {
+  const d = (id: string, amountLeft: number, hasInterest: boolean, aprBp?: number) => ({
+    id,
+    amountLeft,
+    hasInterest,
+    aprBp,
+  });
+  it("puts the priciest known rate first, unknown rates after, interest-free last", () => {
+    const order = attackOrder([
+      d("free", 100, false),
+      d("unknown", 50, true),
+      d("cheap", 500, true, 1800),
+      d("pricey", 900, true, 3200),
+    ]);
+    expect(order.map((x) => x.id)).toEqual(["pricey", "cheap", "unknown", "free"]);
+  });
+});

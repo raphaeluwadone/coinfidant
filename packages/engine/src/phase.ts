@@ -10,13 +10,18 @@ export const PHASES: { key: Phase; label: string; emoji: string; meaning: string
   { key: "build", label: "Build", emoji: "🌱", meaning: "Grow the future." },
 ];
 
-type Rankable = Pick<Debt, "id" | "amountLeft" | "hasInterest">;
+type Rankable = Pick<Debt, "id" | "amountLeft" | "hasInterest" | "aprBp">;
 const active = <T extends Rankable>(debts: T[]) => debts.filter((d) => d.amountLeft > 0);
 
-/** R22: debts with interest first, then the smallest balance (snowball). */
+/** R22: interest-bearing first, the highest known APR first among those, then the smallest balance (snowball). */
 export function attackOrder<T extends Rankable>(debts: T[]): T[] {
+  const apr = (d: T) => (d.hasInterest ? (d.aprBp ?? 0) : 0);
   return active(debts).sort(
-    (a, b) => Number(b.hasInterest) - Number(a.hasInterest) || a.amountLeft - b.amountLeft || a.id.localeCompare(b.id),
+    (a, b) =>
+      Number(b.hasInterest) - Number(a.hasInterest) ||
+      apr(b) - apr(a) ||
+      a.amountLeft - b.amountLeft ||
+      a.id.localeCompare(b.id),
   );
 }
 

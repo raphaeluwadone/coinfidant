@@ -7,6 +7,7 @@ export const debtRow = (d: z.output<typeof debtInput>) => ({
   amountLeft: d.amountLeft,
   originalAmount: d.amountLeft,
   hasInterest: d.hasInterest,
+  aprBp: d.hasInterest ? d.aprBp : null,
   plan: d.plan.kind,
   dueDate: d.plan.kind === "oneOff" ? d.plan.due : null,
   perCycle: d.plan.kind === "installments" ? d.plan.perCycle : null,

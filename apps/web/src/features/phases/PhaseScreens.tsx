@@ -117,15 +117,19 @@ export function FundDetail({ id }: { id: string }) {
   const money = (n: number) => formatMoney(n, t.currency);
   const setAside = t.snapshot?.plan.sinking.find((f) => f.id === id)?.setAside ?? 0;
   // Counted the way the engine spreads the set-aside, so a fund on plan never reads as behind.
-  const cyclesLeft = t.cycle ? sinkingCyclesLeft(fund.dueDate, t.cycle.startDate, b.budget.expectedPayday) : 0;
+  const cyclesLeft =
+    t.cycle && fund.dueDate ? sinkingCyclesLeft(fund.dueDate, t.cycle.startDate, b.budget.expectedPayday) : null;
   const pct = fund.target > 0 ? Math.min(100, Math.round((fund.saved / fund.target) * 100)) : 0;
-  const onTrack = fund.saved + setAside * cyclesLeft >= fund.target;
-  const due = new Date(`${fund.dueDate}T00:00:00Z`).toLocaleDateString("en-GB", {
-    timeZone: "UTC",
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+  // An open-ended buffer can't fall behind a deadline it doesn't have.
+  const onTrack = cyclesLeft === null || fund.saved + setAside * cyclesLeft >= fund.target;
+  const due = fund.dueDate
+    ? new Date(`${fund.dueDate}T00:00:00Z`).toLocaleDateString("en-GB", {
+        timeZone: "UTC",
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      })
+    : null;
 
   return (
     <div className="fund">
@@ -144,7 +148,7 @@ export function FundDetail({ id }: { id: string }) {
       <div className="fund__hero">
         <div className="fund__amount">{money(fund.saved)}</div>
         <div className="fund__of">
-          of {money(fund.target)} · due {due}
+          of {money(fund.target)} · {due ? `due ${due}` : "no deadline"}
         </div>
       </div>
       <span className={`fund__chip ${onTrack ? "is-ok" : "is-behind"}`}>
@@ -158,7 +162,7 @@ export function FundDetail({ id }: { id: string }) {
           </div>
           <div>
             <span>Paydays left</span>
-            <strong>{cyclesLeft}</strong>
+            <strong>{cyclesLeft ?? "No deadline"}</strong>
           </div>
         </section>
       </Card>

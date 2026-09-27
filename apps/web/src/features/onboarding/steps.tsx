@@ -318,7 +318,9 @@ export function BigBills({ a, set, today }: StepProps) {
           ) : (
             <ObCard key={i} className="ob-fund">
               <div className="ob-fund__top">
-                <strong>🏠 {f.name}</strong>
+                <strong>
+                  {f.dueDate ? "🏠" : "🛟"} {f.name}
+                </strong>
                 <strong>{formatMoney(f.target)}</strong>
                 <RowActions
                   onEdit={() => setEditing(i)}
@@ -326,12 +328,12 @@ export function BigBills({ a, set, today }: StepProps) {
                   what={f.name}
                 />
               </div>
-              <div className="ob-muted">Due {monthLabel(f.dueDate, today)}</div>
+              <div className="ob-muted">{f.dueDate ? `Due ${monthLabel(f.dueDate, today)}` : "No deadline"}</div>
               <div className="ob-setaside">
                 We'll set aside{" "}
                 {formatMoney(
                   sinkingSetAside(
-                    { id: "", name: f.name, target: f.target, saved: 0, due: f.dueDate },
+                    { id: "", name: f.name, target: f.target, saved: 0, due: f.dueDate, perCycle: f.perCycle },
                     start,
                     a.expectedPayday,
                   ),
@@ -364,7 +366,9 @@ function FundForm({
 }: FormProps<Answers["sinkingFunds"][number]> & { today: ISODate }) {
   const [name, setName] = useState(initial?.name ?? "");
   const [target, setTarget] = useState(initial?.target ?? 0);
-  const [month, setMonth] = useState(initial?.dueDate.slice(0, 7) ?? "");
+  const [open, setOpen] = useState(initial ? initial.dueDate === null : false);
+  const [month, setMonth] = useState(initial?.dueDate?.slice(0, 7) ?? "");
+  const [perCycle, setPerCycle] = useState(initial?.perCycle ?? 0);
   return (
     <>
       <Input
@@ -376,19 +380,39 @@ function FundForm({
         autoFocus
       />
       <MoneyInput className="bg-card" value={target} onChange={setTarget} aria-label="Amount" />
-      <label className="ob-inline">
-        <span>Due in</span>
-        <Input
-          className="h-10 w-auto bg-card"
-          type="month"
-          min={today.slice(0, 7)}
-          value={month}
-          onChange={(e) => setMonth(e.target.value)}
-        />
+      <label className="flex items-center gap-2 text-[13px] font-semibold text-soft">
+        <Checkbox checked={open} onCheckedChange={(v) => setOpen(v === true)} />
+        No deadline, like an emergency buffer
       </label>
+      {open ? (
+        <MoneyInput
+          className="bg-card"
+          value={perCycle}
+          onChange={setPerCycle}
+          aria-label="Set aside each month"
+          placeholder="Set aside each month"
+        />
+      ) : (
+        <label className="ob-inline">
+          <span>Due in</span>
+          <Input
+            className="h-10 w-auto bg-card"
+            type="month"
+            min={today.slice(0, 7)}
+            value={month}
+            onChange={(e) => setMonth(e.target.value)}
+          />
+        </label>
+      )}
       <FormActions
-        disabled={!name.trim() || target <= 0 || !month}
-        onAdd={() => onAdd({ name: name.trim(), target, dueDate: `${month}-01` })}
+        disabled={!name.trim() || target <= 0 || (open ? perCycle <= 0 : !month)}
+        onAdd={() =>
+          onAdd(
+            open
+              ? { name: name.trim(), target, dueDate: null, perCycle }
+              : { name: name.trim(), target, dueDate: `${month}-01`, perCycle: null },
+          )
+        }
         onCancel={onCancel}
         editing={!!initial}
       />
@@ -397,6 +421,8 @@ function FundForm({
 }
 
 // Step 5
+const aprLabel = (d: DebtInput) => (d.aprBp ? ` · ${d.aprBp / 100}% APR` : "");
+
 const planLabel = (d: DebtInput) => {
   const p = d.plan;
   if (p.kind === "installments") return `Fixed installments · ${formatMoney(p.perCycle)}/month`;
@@ -435,7 +461,7 @@ export function Debts({ a, set }: StepProps) {
               </div>
               <div className="ob-muted">
                 {planLabel(d)}
-                {d.hasInterest ? " · interest or penalties" : ""}
+                {d.hasInterest ? (d.aprBp ? aprLabel(d) : " · interest or penalties") : ""}
               </div>
             </ObCard>
           ),
@@ -474,6 +500,9 @@ function DebtForm({ initial, onAdd, onCancel }: FormProps<DebtInput>) {
   const [ideal, setIdeal] = useState(p?.kind === "flexible" ? p.ideal : 0);
   const [due, setDue] = useState(p?.kind === "oneOff" ? p.due : "");
   const [interest, setInterest] = useState(initial?.hasInterest ?? false);
+  const [apr, setApr] = useState(initial?.aprBp ? String(initial.aprBp / 100) : "");
+  const aprBp = apr.trim() ? Math.round(Number(apr) * 100) : null;
+  const aprOk = aprBp === null || (Number.isFinite(aprBp) && aprBp >= 0 && aprBp <= 100_000);
 
   const plan: DebtInput["plan"] | null =
     kind === "installments"
@@ -570,9 +599,35 @@ function DebtForm({ initial, onAdd, onCancel }: FormProps<DebtInput>) {
         <Checkbox checked={interest} onCheckedChange={(v) => setInterest(v === true)} />
         Charges interest or late penalties
       </label>
+      {interest && (
+        <label className="ob-inline">
+          <span>Interest rate a year (APR), if you know it</span>
+          <span className="flex items-center gap-1.5">
+            <Input
+              className="h-10 w-20 bg-card text-right"
+              inputMode="decimal"
+              placeholder="32"
+              value={apr}
+              onChange={(e) => setApr(e.target.value.replace(/[^\d.]/g, "").slice(0, 6))}
+              aria-label="APR percent"
+            />
+            %
+          </span>
+        </label>
+      )}
       <FormActions
-        disabled={!name.trim() || left <= 0 || !plan}
-        onAdd={() => plan && onAdd({ name: name.trim(), creditor, amountLeft: left, hasInterest: interest, plan })}
+        disabled={!name.trim() || left <= 0 || !plan || !aprOk}
+        onAdd={() =>
+          plan &&
+          onAdd({
+            name: name.trim(),
+            creditor,
+            amountLeft: left,
+            hasInterest: interest,
+            aprBp: interest ? aprBp : null,
+            plan,
+          })
+        }
         onCancel={onCancel}
         editing={!!initial}
       />

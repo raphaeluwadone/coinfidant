@@ -8,6 +8,8 @@ export type Debt = {
   creditor: string;
   amountLeft: Minor;
   hasInterest: boolean;
+  /** Annual rate in basis points (3200 = 32%), when known. */
+  aprBp?: number | null;
   plan:
     | { kind: "oneOff"; due: ISODate }
     | { kind: "installments"; perCycle: Minor }
@@ -30,7 +32,15 @@ export type EngineInput = {
   };
   cycle: { start: ISODate; salary: Minor };
   bills: { id: string; name: string; amount: Minor }[];
-  sinkingFunds: { id: string; name: string; target: Minor; saved: Minor; due: ISODate }[];
+  /** A fund with no `due` sets aside a fixed `perCycle` instead (an emergency buffer). */
+  sinkingFunds: {
+    id: string;
+    name: string;
+    target: Minor;
+    saved: Minor;
+    due: ISODate | null;
+    perCycle?: Minor | null;
+  }[];
   debts: Debt[];
   commitments: { id: string; name: string; min: Minor; ideal: Minor }[];
   transactions: { id: string; amount: Minor; date: ISODate; type: "spend" | "refund" }[];

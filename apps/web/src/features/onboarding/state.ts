@@ -9,7 +9,7 @@ export type Answers = {
   expectedPayday: number;
   lastSalaryOn: ISODate | null;
   bills: { name: string; amount: Minor }[];
-  sinkingFunds: { name: string; target: Minor; dueDate: ISODate }[];
+  sinkingFunds: { name: string; target: Minor; dueDate: ISODate | null; perCycle: Minor | null }[];
   debts: DebtInput[];
   goals: { name: string; emoji: string; target: Minor }[];
   commitments: { name: string; min: Minor; ideal: Minor }[];
@@ -83,6 +83,7 @@ export function previewInput(a: Answers, today: ISODate): EngineInput {
       target: f.target,
       saved: 0,
       due: f.dueDate,
+      perCycle: f.perCycle,
     })),
     debts: a.debts.map((d, i) => ({
       id: `d${i}`,
@@ -90,6 +91,7 @@ export function previewInput(a: Answers, today: ISODate): EngineInput {
       creditor: d.creditor,
       amountLeft: d.amountLeft,
       hasInterest: d.hasInterest ?? false,
+      aprBp: d.aprBp ?? null,
       plan: d.plan,
     })),
     commitments: a.commitments.map((c, i) => ({ id: `c${i}`, ...c })),

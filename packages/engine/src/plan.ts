@@ -27,9 +27,10 @@ export function sinkingCyclesLeft(due: ISODate, start: ISODate, payday: number):
 /** R7 */
 export function sinkingSetAside(f: EngineInput["sinkingFunds"][number], start: ISODate, payday: number): Minor {
   const remaining = f.target - f.saved;
+  if (remaining <= 0) return 0;
+  if (!f.due) return Math.min(remaining, Math.max(0, f.perCycle ?? 0));
   const cyclesLeft = sinkingCyclesLeft(f.due, start, payday);
-  if (remaining <= 0 || cyclesLeft === 0) return 0;
-  return Math.ceil(remaining / cyclesLeft);
+  return cyclesLeft === 0 ? 0 : Math.ceil(remaining / cyclesLeft);
 }
 
 /** R5–R10, R24, R26 */

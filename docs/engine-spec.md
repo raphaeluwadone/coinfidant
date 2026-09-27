@@ -79,6 +79,7 @@ Only transactions dated inside the open cycle count. Fixed bills are never trans
   If the goal is already below the floor, savings stay at the goal and nothing comes from savings.
 - **R7 Sinking funds.** Each fund sets aside `ceil((target − saved) / cyclesLeft)`, where `cyclesLeft` counts this
   cycle and every later payday up to `due`, minimum 1. A funded fund or a past due date sets aside 0.
+  A fund with no due date (an emergency buffer) sets aside its fixed `perCycle` instead, never more than it still needs.
 - **R8 Commitments.** Minimum vs ideal commitments are budgeted at `min`.
 - **R9 Flexible money.**
   ```
@@ -120,8 +121,8 @@ Only transactions dated inside the open cycle count. Fixed bills are never trans
 
 - **R21 Leftover default.** A finished week with no `sweepChoices` entry sweeps to the current attack target (R22) when
   `leftoverDefault` is `debts`, otherwise to savings. With no active debts it always goes to savings.
-- **R22 Attack order.** Active debts (amount left above 0), interest-bearing first, then the smallest balance
-  (snowball), then by id. There's no interest rate yet, so `hasInterest` is the only cost signal.
+- **R22 Attack order.** Active debts (amount left above 0), interest-bearing first; among those the highest APR
+  first, with an unknown APR ranking below any known one; then the smallest balance (snowball), then by id.
 - **R23 Phase.** No active debts is **Build**. Active debts plus a squeezed plan is **Stabilise**: `overcommitted`,
   `tight`, or any repayment taking money from flexible (`fromFlexible > 0`). Anything else is **Attack**. The rough
   unlock month is `cycle.start` plus the cycles until the first debt clears (Stabilise) or until all debts clear at the

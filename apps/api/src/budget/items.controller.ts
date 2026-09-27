@@ -7,6 +7,7 @@ import {
   idParam,
   incomeInput,
   sinkingFundInput,
+  sinkingFundPatch,
 } from "@coinfidant/contracts";
 import {
   BadRequestException,
@@ -107,7 +108,7 @@ export class ItemsController {
   @Patch("sinking-funds/:id") updateFund(
     @UserId() u: string,
     @Param(new ZodPipe(idParam)) p: Id,
-    @Body(new ZodPipe(sinkingFundInput.partial())) b: object,
+    @Body(new ZodPipe(sinkingFundPatch)) b: object,
   ) {
     return this.update(u, sinkingFunds, p.id, b);
   }
