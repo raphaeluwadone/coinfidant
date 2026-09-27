@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { computeOpenCycle } from "./cycle";
 import type { DiscoveryTxn } from "./discovery";
-import { generateInsights, type InsightInput, insightText } from "./insights";
+import { generateInsights, INSIGHT_EMOJI, type InsightInput, insightText } from "./insights";
+import { linesFor, type Tone } from "./voice";
 import type { EngineInput } from "./types";
 
 const NGN = (n: number) => n * 100;
@@ -119,7 +120,18 @@ describe("R27 insights", () => {
   it("turns an insight into words in the chosen tone", () => {
     const [x] = run("2026-06-10", [spend("2026-06-08", 30_000)]);
     const money = (n: number) => `NGN ${n / 100}`;
-    expect(insightText(x!, "gentle", money)).toBe("You're NGN 10000 ahead of this week's pace. Easing off helps.");
-    expect(insightText(x!, "unhinged", money)).toBe("NGN 10000 OVER PACE. BRAKES. NOW 🛑😬");
+    expect(insightText(x!, "gentle", money)).toBe("You're NGN 10000 over this week's pace. Easing off helps.");
+    expect(insightText(x!, "unhinged", money)).toBe("NGN 10000 OVER PACE. BRAKES. NOW 😬");
+  });
+
+  it("never repeats the icon the card already shows", () => {
+    const tones: Tone[] = ["gentle", "cheeky", "unhinged"];
+    for (const [key, icon] of Object.entries(INSIGHT_EMOJI))
+      for (const tone of tones)
+        for (const line of linesFor(`insight.${key}` as Parameters<typeof linesFor>[0], tone))
+          expect(line.includes(icon), `insight.${key} ${tone}: ${line}`).toBe(false);
+    // The category icon is the category's own emoji, so its lines don't carry one.
+    for (const tone of tones)
+      for (const line of linesFor("insight.category", tone)) expect(line).not.toContain("{emoji}");
   });
 });

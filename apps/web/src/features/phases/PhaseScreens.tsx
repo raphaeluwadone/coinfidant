@@ -1,4 +1,4 @@
-import { attackOrder, daysBetween, formatMoney, type Phase, PHASES, say } from "@coinfidant/engine";
+import { attackOrder, formatMoney, type Phase, PHASES, say, sinkingCyclesLeft } from "@coinfidant/engine";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useMemo } from "react";
@@ -116,10 +116,10 @@ export function FundDetail({ id }: { id: string }) {
     );
   const money = (n: number) => formatMoney(n, t.currency);
   const setAside = t.snapshot?.plan.sinking.find((f) => f.id === id)?.setAside ?? 0;
-  const today = t.snapshot?.today.date ?? fund.dueDate;
-  const monthsLeft = Math.max(0, Math.ceil(daysBetween(today, fund.dueDate) / 30.44));
+  // Counted the way the engine spreads the set-aside, so a fund on plan never reads as behind.
+  const cyclesLeft = t.cycle ? sinkingCyclesLeft(fund.dueDate, t.cycle.startDate, b.budget.expectedPayday) : 0;
   const pct = fund.target > 0 ? Math.min(100, Math.round((fund.saved / fund.target) * 100)) : 0;
-  const onTrack = fund.saved + setAside * Math.max(monthsLeft, 1) >= fund.target;
+  const onTrack = fund.saved + setAside * cyclesLeft >= fund.target;
   const due = new Date(`${fund.dueDate}T00:00:00Z`).toLocaleDateString("en-GB", {
     timeZone: "UTC",
     day: "numeric",
@@ -157,8 +157,8 @@ export function FundDetail({ id }: { id: string }) {
             <strong>{money(setAside)}</strong>
           </div>
           <div>
-            <span>Months left</span>
-            <strong>{monthsLeft}</strong>
+            <span>Paydays left</span>
+            <strong>{cyclesLeft}</strong>
           </div>
         </section>
       </Card>

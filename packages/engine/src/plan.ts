@@ -19,11 +19,16 @@ export function debtDue(d: Debt, start: ISODate, end: ISODate): Minor {
   }
 }
 
+/** R7: this cycle plus every later payday before the due date. */
+export function sinkingCyclesLeft(due: ISODate, start: ISODate, payday: number): number {
+  return due < start ? 0 : 1 + laterPaydays(start, payday, due).length;
+}
+
 /** R7 */
 export function sinkingSetAside(f: EngineInput["sinkingFunds"][number], start: ISODate, payday: number): Minor {
   const remaining = f.target - f.saved;
-  if (remaining <= 0 || f.due < start) return 0;
-  const cyclesLeft = 1 + laterPaydays(start, payday, f.due).length;
+  const cyclesLeft = sinkingCyclesLeft(f.due, start, payday);
+  if (remaining <= 0 || cyclesLeft === 0) return 0;
   return Math.ceil(remaining / cyclesLeft);
 }
 

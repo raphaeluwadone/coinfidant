@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { allocate, spreadDeficit } from "./alloc";
 import { projectedEnd } from "./calendar";
+import { sinkingCyclesLeft } from "./plan";
 import { closeCycle, computeOpenCycle } from "./cycle";
 import { weekday } from "./date";
 import { formatMoney } from "./money";
@@ -413,5 +414,14 @@ describe("helpers", () => {
     expect(formatMoney(NGN(12_500))).toBe("NGN 12,500");
     expect(formatMoney(NGN(-5_000))).toBe("-NGN 5,000");
     expect(formatMoney(-20)).toBe("NGN 0");
+  });
+});
+
+describe("R7 sinking fund cycles", () => {
+  it("counts this cycle plus every later payday before the due date", () => {
+    // Cycle from 11 Sep (the 31 Aug payday's), due 1 Feb: this one plus the Sep to Jan paydays.
+    expect(sinkingCyclesLeft("2027-02-01", "2026-09-11", 31)).toBe(6);
+    expect(sinkingCyclesLeft("2026-09-20", "2026-09-11", 31)).toBe(1);
+    expect(sinkingCyclesLeft("2026-09-01", "2026-09-11", 31)).toBe(0);
   });
 });

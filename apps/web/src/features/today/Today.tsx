@@ -20,6 +20,7 @@ import { Mascot } from "@/components/Mascot";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, Eyebrow } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import type { SessionUser } from "@/lib/auth";
 import { paydayDue, todayQuery, type TodayData } from "@/lib/today";
 import { markSalaryReceived } from "@/lib/transactions";
@@ -89,7 +90,8 @@ function TodayView({ data, snapshot: s, user }: { data: TodayData; snapshot: Ope
         </div>
         <div className="today__tools">
           {phase && <PhasePill phase={phase.phase} />}
-          <Badge className="min-[900px]:px-3 min-[900px]:py-2">
+          {/* On a phone the phase pill wins the space; the tone is one tap away in Settings. */}
+          <Badge className={cn("min-[900px]:px-3 min-[900px]:py-2", phase && "max-[479px]:hidden")}>
             {tone.emoji} {tone.label}
             <span className="pill__suffix"> mode</span>
           </Badge>

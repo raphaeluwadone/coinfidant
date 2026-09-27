@@ -221,54 +221,54 @@ export const VOICE = {
   // Insights (R27)
   "insight.ahead": all(
     ["You're {amount} under pace this week."],
-    ["{amount} under pace this week. Suspiciously responsible 😎"],
-    ["{amount} UNDER PACE. Who ARE you 😎🔥"],
+    ["{amount} under pace this week. Suspiciously responsible"],
+    ["{amount} UNDER PACE. Who ARE you 🔥"],
   ),
   "insight.behind": all(
-    ["You're {amount} ahead of this week's pace. Easing off helps."],
-    ["{amount} past pace this week. Pump the brakes a little 🛑"],
-    ["{amount} OVER PACE. BRAKES. NOW 🛑😬"],
+    ["You're {amount} over this week's pace. Easing off helps."],
+    ["{amount} past pace this week. Pump the brakes a little"],
+    ["{amount} OVER PACE. BRAKES. NOW 😬"],
   ),
   "insight.swept": all(
     ["Last week you swept {amount}."],
-    ["Last week swept {amount}. Tidy 🧹"],
-    ["LAST WEEK SWEPT {amount} 🧹✨ CLEAN"],
+    ["Last week swept {amount}. Tidy"],
+    ["LAST WEEK SWEPT {amount} ✨ CLEAN"],
   ),
   "insight.spread": all(
     ["Last week's extra {amount} is spread over the weeks ahead."],
-    ["Last week's extra {amount} is being smoothed out 🌶️"],
-    ["Last week's {amount} chaos is being SPREAD THIN 🌶️🧈"],
+    ["Last week's extra {amount} is being smoothed out"],
+    ["Last week's {amount} chaos is being SPREAD THIN 🧈"],
   ),
   "insight.borrowed": warm("Last week borrowed {amount} from savings. A steadier week helps it recover."),
   "insight.category": all(
-    ["{emoji} {name} is {percent} of this week's spending."],
-    ["{emoji} {name} is eating {percent} of this week's spending"],
-    ["{emoji} {name} ATE {percent} OF THIS WEEK 🍽️"],
+    ["{name} is {percent} of this week's spending."],
+    ["{name} is eating {percent} of this week's spending"],
+    ["{name} ATE {percent} OF THIS WEEK 🍽️"],
   ),
   "insight.weekday": all(
     ["{day}s tend to be your bigger spending days."],
-    ["{day}s are your big spend days. Plan accordingly 📅"],
+    ["{day}s are your big spend days. Plan accordingly"],
     ["{day}s ARE YOUR SPEND DAYS. WE SEE YOU 👀"],
   ),
   "insight.streak": all(
     ["{count} days of logging in a row."],
-    ["{count}-day logging streak 🔥 Keep it going"],
-    ["{count} DAY STREAK 🔥🔥 DON'T YOU DARE STOP"],
+    ["{count}-day logging streak. Keep it going"],
+    ["{count} DAY STREAK 🙌 DON'T YOU DARE STOP"],
   ),
   "insight.gap": all(
     ["No logs for {days} days. Anything to catch up on?"],
     ["{days} days, no logs. Did your wallet go on holiday? 🏝️"],
-    ["{days} DAYS OF SILENCE 🦗 Log something!!"],
+    ["{days} DAYS OF SILENCE 😶 Log something!!"],
   ),
   "insight.payday": all(
     ["Payday is {days} days away."],
-    ["Payday in {days} days. Almost there 💸"],
-    ["PAYDAY IN {days} DAYS 💸💸 HOLD THE LINE"],
+    ["Payday in {days} days. Almost there"],
+    ["PAYDAY IN {days} DAYS 🤑 HOLD THE LINE"],
   ),
   "insight.target": all(
     ["{amount} left on {name}."],
     ["{amount} to go on {name}. Keep swinging 💪"],
-    ["{name}: {amount} HP LEFT ⚔️ FINISH IT"],
+    ["{name}: {amount} HP LEFT. FINISH IT 💥"],
   ),
 
   // Phases (M7)
