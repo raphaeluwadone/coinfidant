@@ -11,7 +11,7 @@ import { hpPercent } from "./PhaseParts";
 import "./Phases.css";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, Eyebrow } from "@/components/ui/card";
 
 /** Attack mode's board: the current target first, then the queue, then the defeated. */
 export function DebtBoard() {
@@ -190,7 +190,7 @@ export function SweepOffer() {
 
   return (
     <div className="sweep">
-      <div className="label">Left over from last week</div>
+      <Eyebrow>Left over from last week</Eyebrow>
       <div className="sweep__amount">{money}</div>
       <p>{line}</p>
       <div className="sweep__options">

@@ -438,6 +438,7 @@
   color: var(--ph-muted);
 }
 .ob-reveal__list {
+  list-style: decimal;
   margin: 0;
   padding-left: 20px;
   font-size: 13px;

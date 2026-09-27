@@ -1,10 +1,10 @@
 /*
- * Tailwind for shadcn/ui components. Preflight (Tailwind's reset) is left out until every screen has moved over,
- * so existing hand-written CSS renders unchanged. Layered rules lose to unlayered ones, so old CSS still wins where
+ * Tailwind for the shadcn/ui components. Screen-specific CSS stays unlayered, so it still wins over utilities where
  * the two overlap.
  */
 @layer theme, base, components, utilities;
 @import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
 @import "tailwindcss/utilities.css" layer(utilities);
 @import "tw-animate-css";
 

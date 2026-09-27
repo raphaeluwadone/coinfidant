@@ -29,7 +29,7 @@ export const toggleItemVariants = cva(
         chips:
           "shrink-0 bg-secondary px-3.5 py-[9px] text-[13px] font-semibold text-soft data-[state=on]:bg-primary data-[state=on]:font-bold data-[state=on]:text-primary-foreground",
         tiles:
-          "grid justify-items-start gap-0.5 rounded-field border-2 border-transparent bg-card p-3.5 text-left text-sm whitespace-normal text-foreground data-[state=on]:border-accent-foreground data-[state=on]:bg-secondary",
+          "grid w-full grid-cols-1 justify-items-start gap-0.5 rounded-field border-2 border-transparent bg-card p-3.5 text-left text-sm whitespace-normal text-foreground data-[state=on]:border-accent-foreground data-[state=on]:bg-secondary",
       },
     },
     defaultVariants: { variant: "segmented" },

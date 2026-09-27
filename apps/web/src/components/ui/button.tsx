@@ -22,7 +22,7 @@ export const buttonVariants = cva(
         default: "h-13 px-6 text-base",
         sm: "h-10 px-4 text-sm",
         icon: "size-9 text-base",
-        inline: "h-auto p-0 text-sm",
+        inline: "h-auto justify-self-start p-0 text-sm",
       },
     },
     defaultVariants: { variant: "default", size: "default" },

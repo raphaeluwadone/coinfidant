@@ -19,7 +19,7 @@ export function TabsTrigger({ className, ...props }: ComponentProps<typeof TabsP
     <TabsPrimitive.Trigger
       data-slot="tabs-trigger"
       className={cn(
-        "flex-1 cursor-pointer rounded-full border-0 bg-transparent px-4 py-2 text-sm font-bold text-soft outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/40 data-[state=active]:bg-card data-[state=active]:text-accent-foreground data-[state=active]:shadow-sm",
+        "flex-1 cursor-pointer rounded-full border-0 bg-transparent px-4 py-2 text-sm font-bold whitespace-nowrap text-soft outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/40 data-[state=active]:bg-card data-[state=active]:text-accent-foreground data-[state=active]:shadow-sm",
         className,
       )}
       {...props}

@@ -487,6 +487,7 @@
   font-size: 14px;
 }
 .phaseup__changes ul {
+  list-style: disc;
   margin: 0;
   padding-left: 18px;
   display: grid;

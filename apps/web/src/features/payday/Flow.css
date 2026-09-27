@@ -208,6 +208,7 @@
   font-weight: 700;
 }
 .flow__card ul {
+  list-style: disc;
   margin: 0;
   padding-left: 18px;
   font-size: 13px;

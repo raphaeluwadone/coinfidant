@@ -1,9 +1,3 @@
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
-
 html,
 body {
   margin: 0;
@@ -13,140 +7,13 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Layered so component utilities (text colours on buttons and inputs) can override it. */
+/* Preflight makes headings inherit weight; screens were designed on bold headings. */
 @layer base {
-  button,
-  input {
-    font: inherit;
-    color: inherit;
+  h1,
+  h2,
+  h3 {
+    font-weight: 700;
   }
-}
-
-.card {
-  background: var(--surface);
-  border-radius: var(--radius-card);
-  box-shadow: var(--shadow-card);
-  padding: 20px;
-}
-
-.label {
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  height: 52px;
-  padding: 0 24px;
-  border: 0;
-  border-radius: var(--radius-pill);
-  background: var(--accent);
-  color: #fff;
-  font-weight: 700;
-  font-size: 16px;
-  cursor: pointer;
-  transition:
-    transform 0.12s ease,
-    background 0.2s ease;
-}
-.btn:hover {
-  background: #4f46e5;
-}
-.btn:active {
-  transform: scale(0.97);
-}
-.btn:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.field input {
-  height: 48px;
-  padding: 0 16px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--surface-2);
-  outline: none;
-}
-.field input:focus {
-  border-color: var(--accent);
-}
-
-/* Shared form controls */
-.money-input {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  height: 48px;
-  padding: 0 14px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--surface-2);
-  min-width: 0;
-}
-.money-input:focus-within {
-  border-color: var(--accent);
-}
-.money-input span {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text-muted);
-}
-.money-input input {
-  flex: 1;
-  min-width: 0;
-  border: 0;
-  background: none;
-  outline: none;
-  font-weight: 700;
-  font-size: 16px;
-}
-
-.text-input,
-.select {
-  height: 48px;
-  padding: 0 14px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--surface-2);
-  outline: none;
-  min-width: 0;
-}
-.text-input:focus,
-.select:focus {
-  border-color: var(--accent);
-}
-
-.icon-btn {
-  width: 36px;
-  height: 36px;
-  border: 0;
-  border-radius: var(--radius-pill);
-  background: var(--surface-2);
-  color: var(--text-muted);
-  font-size: 20px;
-  cursor: pointer;
-}
-
-.link-btn {
-  justify-self: start;
-  border: 0;
-  background: none;
-  padding: 0;
-  color: var(--accent-text);
-  font-weight: 700;
-  cursor: pointer;
 }
 
 @keyframes fade-up {
@@ -167,16 +34,4 @@ body {
     animation: none !important;
     transition: none !important;
   }
-}
-
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
 }

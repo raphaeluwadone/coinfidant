@@ -253,7 +253,7 @@ function BillForm({ initial, onAdd, onCancel }: FormProps<Answers["bills"][numbe
         onChange={(e) => setName(e.target.value)}
         autoFocus
       />
-      <MoneyInput value={amount} onChange={setAmount} aria-label="Bill amount" />
+      <MoneyInput className="bg-card" value={amount} onChange={setAmount} aria-label="Bill amount" />
       <FormActions
         disabled={!name.trim() || amount <= 0}
         onAdd={() => onAdd({ name: name.trim(), amount })}
@@ -375,7 +375,7 @@ function FundForm({
         onChange={(e) => setName(e.target.value)}
         autoFocus
       />
-      <MoneyInput value={target} onChange={setTarget} aria-label="Amount" />
+      <MoneyInput className="bg-card" value={target} onChange={setTarget} aria-label="Amount" />
       <label className="ob-inline">
         <span>Due in</span>
         <Input
@@ -498,7 +498,7 @@ function DebtForm({ initial, onAdd, onCancel }: FormProps<DebtInput>) {
         aria-label="Who it's owed to"
       >
         {CREDITORS.map((c) => (
-          <ToggleGroupItem key={c.label} value={c.label} className="bg-card">
+          <ToggleGroupItem key={c.label} value={c.label}>
             {c.emoji} {c.label}
           </ToggleGroupItem>
         ))}
@@ -512,7 +512,7 @@ function DebtForm({ initial, onAdd, onCancel }: FormProps<DebtInput>) {
         autoFocus
       />
       <Label>Amount left</Label>
-      <MoneyInput value={left} onChange={setLeft} aria-label="Amount left" />
+      <MoneyInput className="bg-card" value={left} onChange={setLeft} aria-label="Amount left" />
       <ToggleGroup
         type="single"
         value={kind}
@@ -531,12 +531,30 @@ function DebtForm({ initial, onAdd, onCancel }: FormProps<DebtInput>) {
         </ToggleGroupItem>
       </ToggleGroup>
       {kind === "installments" && (
-        <MoneyInput value={perCycle} onChange={setPerCycle} aria-label="Monthly repayment" placeholder="Per month" />
+        <MoneyInput
+          className="bg-card"
+          value={perCycle}
+          onChange={setPerCycle}
+          aria-label="Monthly repayment"
+          placeholder="Per month"
+        />
       )}
       {kind === "flexible" && (
         <div className="ob-pair">
-          <MoneyInput value={min} onChange={setMin} aria-label="Minimum a month" placeholder="Min" />
-          <MoneyInput value={ideal} onChange={setIdeal} aria-label="Ideal a month" placeholder="Ideal" />
+          <MoneyInput
+            className="bg-card"
+            value={min}
+            onChange={setMin}
+            aria-label="Minimum a month"
+            placeholder="Min"
+          />
+          <MoneyInput
+            className="bg-card"
+            value={ideal}
+            onChange={setIdeal}
+            aria-label="Ideal a month"
+            placeholder="Ideal"
+          />
         </div>
       )}
       {kind === "oneOff" && (
@@ -578,9 +596,9 @@ function BulkDebtForm({ onAdd, onCancel }: { onAdd: (d: DebtInput[]) => void; on
         onChange={(e) => setCount(Math.max(2, Math.min(30, Number(e.target.value) || 2)))}
       />
       <Label>About how much left on each?</Label>
-      <MoneyInput value={each} onChange={setEach} aria-label="Amount left on each" />
+      <MoneyInput className="bg-card" value={each} onChange={setEach} aria-label="Amount left on each" />
       <Label>Monthly repayment on each</Label>
-      <MoneyInput value={perCycle} onChange={setPerCycle} aria-label="Monthly repayment on each" />
+      <MoneyInput className="bg-card" value={perCycle} onChange={setPerCycle} aria-label="Monthly repayment on each" />
       <FormActions
         disabled={each <= 0 || perCycle <= 0}
         onAdd={() =>
@@ -736,7 +754,7 @@ function GoalForm({
           aria-label="Goal emoji"
         >
           {GOAL_EMOJI.map((e) => (
-            <ToggleGroupItem key={e} value={e} aria-label={e} className="bg-card px-2.5 py-2 text-lg">
+            <ToggleGroupItem key={e} value={e} aria-label={e} className="px-2.5 py-2 text-lg">
               {e}
             </ToggleGroupItem>
           ))}
@@ -751,11 +769,23 @@ function GoalForm({
         autoFocus
       />
       {kind === "goal" ? (
-        <MoneyInput value={target} onChange={setTarget} aria-label="Target" placeholder="Target" />
+        <MoneyInput className="bg-card" value={target} onChange={setTarget} aria-label="Target" placeholder="Target" />
       ) : (
         <div className="ob-pair">
-          <MoneyInput value={min} onChange={setMin} aria-label="Minimum a month" placeholder="Min" />
-          <MoneyInput value={ideal} onChange={setIdeal} aria-label="Ideal a month" placeholder="Ideal" />
+          <MoneyInput
+            className="bg-card"
+            value={min}
+            onChange={setMin}
+            aria-label="Minimum a month"
+            placeholder="Min"
+          />
+          <MoneyInput
+            className="bg-card"
+            value={ideal}
+            onChange={setIdeal}
+            aria-label="Ideal a month"
+            placeholder="Ideal"
+          />
         </div>
       )}
       <FormActions
