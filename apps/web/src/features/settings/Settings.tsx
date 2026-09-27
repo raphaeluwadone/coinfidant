@@ -1,9 +1,12 @@
 import { sweepPreview, TONES, type Tone } from "@coinfidant/engine";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
+import { BackButton } from "../../components/BackButton";
 import { logout, meQuery } from "../../lib/auth";
 import { type BudgetData, budgetQuery, savePreferences, saveSettings } from "../../lib/budget";
 import { disablePush } from "../../lib/push";
+import { getTheme, setTheme, type ThemeChoice } from "../../lib/theme";
 import { todayQuery } from "../../lib/today";
 import { Notifications, YourData } from "./AccountSections";
 import "./Settings.css";
@@ -15,6 +18,12 @@ const CURRENCIES = [
   { code: "EUR", name: "Euro" },
 ] as const;
 
+const THEMES: { key: ThemeChoice; label: string }[] = [
+  { key: "system", label: "🖥️ System" },
+  { key: "light", label: "☀️ Light" },
+  { key: "dark", label: "🌙 Dark" },
+];
+
 const CHECKINS = [
   { key: "evening", label: "🌙 Evening check-in" },
   { key: "drift", label: "📉 Drift alerts" },
@@ -25,6 +34,7 @@ export function Settings() {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const { data } = useQuery(budgetQuery);
+  const [theme, pickTheme] = useState(getTheme);
 
   const refresh = () =>
     Promise.all([
@@ -54,6 +64,7 @@ export function Settings() {
 
   return (
     <div className="settings">
+      <BackButton />
       <h1>Settings</h1>
 
       <section>
@@ -76,6 +87,32 @@ export function Settings() {
         {TONES.map((t) => (
           <Preview key={t.key} tone={t.key} line={preview[t.key]} selected={me.personality === t.key} />
         ))}
+      </section>
+
+      <section>
+        <h2>Appearance</h2>
+        <div className="card settings__row">
+          <span>
+            Theme
+            <small>Saved on this device</small>
+          </span>
+          <div className="seg" role="radiogroup" aria-label="Theme">
+            {THEMES.map((t) => (
+              <button
+                key={t.key}
+                role="radio"
+                aria-checked={theme === t.key}
+                className={theme === t.key ? "is-on" : ""}
+                onClick={() => {
+                  setTheme(t.key);
+                  pickTheme(t.key);
+                }}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+        </div>
       </section>
 
       <section>
