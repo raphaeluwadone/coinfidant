@@ -2,14 +2,20 @@ import { sweepPreview, TONES, type Tone } from "@coinfidant/engine";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { BackButton } from "../../components/BackButton";
-import { logout, meQuery } from "../../lib/auth";
-import { type BudgetData, budgetQuery, savePreferences, saveSettings } from "../../lib/budget";
-import { disablePush } from "../../lib/push";
-import { getTheme, setTheme, type ThemeChoice } from "../../lib/theme";
-import { todayQuery } from "../../lib/today";
+import { BackButton } from "@/components/BackButton";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { logout, meQuery } from "@/lib/auth";
+import { type BudgetData, budgetQuery, savePreferences, saveSettings } from "@/lib/budget";
+import { disablePush } from "@/lib/push";
+import { getTheme, setTheme, type ThemeChoice } from "@/lib/theme";
+import { todayQuery } from "@/lib/today";
+import { cn } from "@/lib/utils";
 import { Notifications, YourData } from "./AccountSections";
-import "./Settings.css";
+import { ErrorNote, Row, Section } from "./parts";
 
 const CURRENCIES = [
   { code: "NGN", name: "Naira" },
@@ -17,6 +23,7 @@ const CURRENCIES = [
   { code: "GBP", name: "Pound sterling" },
   { code: "EUR", name: "Euro" },
 ] as const;
+type Currency = (typeof CURRENCIES)[number]["code"];
 
 const THEMES: { key: ThemeChoice; label: string }[] = [
   { key: "system", label: "🖥️ System" },
@@ -29,6 +36,7 @@ const CHECKINS = [
   { key: "drift", label: "📉 Drift alerts" },
   { key: "app", label: "🤐 Just let me open the app" },
 ] as const;
+type Checkin = (typeof CHECKINS)[number]["key"];
 
 export function Settings() {
   const qc = useQueryClient();
@@ -58,146 +66,123 @@ export function Settings() {
     onSettled: refresh,
   });
 
-  if (!data) return <div className="settings" aria-busy="true" />;
+  if (!data) return <div className="mx-auto max-w-[560px]" aria-busy="true" />;
   const { budget, prefs: me } = data;
   const preview = sweepPreview(4_200_00);
 
   return (
-    <div className="settings">
+    <div className="mx-auto grid max-w-[560px] content-start gap-[22px]">
       <BackButton />
-      <h1>Settings</h1>
+      <h1 className="m-0 text-lg font-bold">Settings</h1>
 
-      <section>
-        <h2>Personality</h2>
-        <p className="settings__hint">How much sass do you want?</p>
-        <div className="dial" role="radiogroup" aria-label="Personality">
+      <Section title="Personality" hint="How much sass do you want?">
+        <ToggleGroup
+          type="single"
+          value={me.personality}
+          onValueChange={(v) => v && prefs.mutate({ personality: v as Tone })}
+          aria-label="Personality"
+          className="p-1"
+        >
           {TONES.map((t) => (
-            <button
-              key={t.key}
-              role="radio"
-              aria-checked={me.personality === t.key}
-              className={me.personality === t.key ? "is-on" : ""}
-              onClick={() => prefs.mutate({ personality: t.key })}
-            >
+            <ToggleGroupItem key={t.key} value={t.key} className="flex-1 py-2.5 text-[13px]">
               {t.emoji} {t.label}
-            </button>
+            </ToggleGroupItem>
           ))}
+        </ToggleGroup>
+        <div className="mt-1.5 text-xs font-semibold tracking-wide text-muted-foreground">
+          LIVE PREVIEW: SAME MOMENT, THREE VOICES
         </div>
-        <div className="settings__label">LIVE PREVIEW: SAME MOMENT, THREE VOICES</div>
         {TONES.map((t) => (
           <Preview key={t.key} tone={t.key} line={preview[t.key]} selected={me.personality === t.key} />
         ))}
-      </section>
+      </Section>
 
-      <section>
-        <h2>Appearance</h2>
-        <div className="card settings__row">
-          <span>
-            Theme
-            <small>Saved on this device</small>
-          </span>
-          <div className="seg" role="radiogroup" aria-label="Theme">
+      <Section title="Appearance">
+        <Row title="Theme" hint="Saved on this device">
+          <ToggleGroup
+            type="single"
+            value={theme}
+            onValueChange={(v) => {
+              if (!v) return;
+              setTheme(v as ThemeChoice);
+              pickTheme(v as ThemeChoice);
+            }}
+            aria-label="Theme"
+          >
             {THEMES.map((t) => (
-              <button
-                key={t.key}
-                role="radio"
-                aria-checked={theme === t.key}
-                className={theme === t.key ? "is-on" : ""}
-                onClick={() => {
-                  setTheme(t.key);
-                  pickTheme(t.key);
-                }}
-              >
+              <ToggleGroupItem key={t.key} value={t.key}>
                 {t.label}
-              </button>
+              </ToggleGroupItem>
             ))}
-          </div>
-        </div>
-      </section>
+          </ToggleGroup>
+        </Row>
+      </Section>
 
-      <section>
-        <h2>Currency</h2>
-        <label className="card settings__row">
-          <span>
-            {CURRENCIES.find((c) => c.code === budget.currency)?.name} ({budget.currency})
-          </span>
-          <span className="settings__change">Change ›</span>
-          <select
-            className="settings__select"
-            value={budget.currency}
-            onChange={(e) => settings.mutate({ currency: e.target.value as (typeof CURRENCIES)[number]["code"] })}
-            aria-label="Currency"
-          >
-            {CURRENCIES.map((c) => (
-              <option key={c.code} value={c.code}>
-                {c.name} ({c.code})
-              </option>
-            ))}
-          </select>
-        </label>
-      </section>
+      <Section title="Currency">
+        <Row title="Currency">
+          <Select value={budget.currency} onValueChange={(v) => settings.mutate({ currency: v as Currency })}>
+            <SelectTrigger className="h-10 w-auto border-0 bg-transparent px-0 text-[13px] font-semibold text-accent-foreground">
+              <SelectValue aria-label="Currency" />
+            </SelectTrigger>
+            <SelectContent align="end">
+              {CURRENCIES.map((c) => (
+                <SelectItem key={c.code} value={c.code}>
+                  {c.name} ({c.code})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Row>
+      </Section>
 
-      <section>
-        <h2>Payday and leftovers</h2>
-        <label className="card settings__row">
-          <span>
-            💸 Payday mode
-            <small>Feed the responsibilities before showing what's yours</small>
-          </span>
-          <input
-            type="checkbox"
-            className="switch"
+      <Section title="Payday and leftovers">
+        <Row title="💸 Payday mode" hint="Feed the responsibilities before showing what's yours">
+          <Switch
             checked={budget.paydayMode}
-            onChange={(e) => settings.mutate({ paydayMode: e.target.checked })}
+            onCheckedChange={(on) => settings.mutate({ paydayMode: on })}
+            aria-label="Payday mode"
           />
-        </label>
-        <div className="card settings__row">
-          <span>Weekly leftovers go to</span>
-          <div className="seg" role="radiogroup" aria-label="Weekly leftovers">
-            {(
-              [
-                ["debts", "⚔️ Debts"],
-                ["savings", "🌱 Savings"],
-              ] as const
-            ).map(([k, label]) => (
-              <button
-                key={k}
-                role="radio"
-                aria-checked={budget.leftoverDefault === k}
-                className={budget.leftoverDefault === k ? "is-on" : ""}
-                onClick={() => settings.mutate({ leftoverDefault: k })}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
-        <label className="card settings__row">
-          <span>Check-ins</span>
-          <select
-            className="select"
-            value={me.checkinMethod}
-            onChange={(e) => prefs.mutate({ checkinMethod: e.target.value as (typeof CHECKINS)[number]["key"] })}
+        </Row>
+        <Row title="Weekly leftovers go to">
+          <ToggleGroup
+            type="single"
+            value={budget.leftoverDefault}
+            onValueChange={(v) => v && settings.mutate({ leftoverDefault: v as "debts" | "savings" })}
+            aria-label="Weekly leftovers"
           >
-            {CHECKINS.map((c) => (
-              <option key={c.key} value={c.key}>
-                {c.label}
-              </option>
-            ))}
-          </select>
-        </label>
+            <ToggleGroupItem value="debts">⚔️ Debts</ToggleGroupItem>
+            <ToggleGroupItem value="savings">🌱 Savings</ToggleGroupItem>
+          </ToggleGroup>
+        </Row>
+        <Row title="Check-ins">
+          <Select value={me.checkinMethod} onValueChange={(v) => prefs.mutate({ checkinMethod: v as Checkin })}>
+            <SelectTrigger className="h-10 w-auto min-w-44 text-sm">
+              <SelectValue aria-label="Check-ins" />
+            </SelectTrigger>
+            <SelectContent align="end">
+              {CHECKINS.map((c) => (
+                <SelectItem key={c.key} value={c.key}>
+                  {c.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Row>
         {me.checkinMethod !== "app" && <Notifications />}
-      </section>
+      </Section>
 
       <YourData />
 
-      <section className="settings__links">
-        <Link to="/setup" className="card settings__row settings__link">
-          <span>Edit plan: salary, payday, bills</span>
-          <span className="settings__change">›</span>
+      <section className="grid gap-2.5">
+        <Link to="/setup" className="rounded-tile text-foreground no-underline">
+          <Row title="Edit plan: salary, payday, bills" className="transition-colors hover:bg-secondary">
+            <span className="text-[13px] font-semibold text-accent-foreground">›</span>
+          </Row>
         </Link>
-        <button
-          className="link-btn settings__logout"
+        <Button
+          variant="muted"
+          size="inline"
+          className="justify-self-center"
           onClick={async () => {
             await disablePush().catch(() => {});
             await logout();
@@ -207,13 +192,11 @@ export function Settings() {
           }}
         >
           Log out
-        </button>
+        </Button>
       </section>
 
       {(prefs.isError || settings.isError) && (
-        <p className="settings__error" role="alert">
-          That didn't save. Check your connection and try again.
-        </p>
+        <ErrorNote>That didn't save. Check your connection and try again.</ErrorNote>
       )}
     </div>
   );
@@ -222,12 +205,22 @@ export function Settings() {
 function Preview({ tone, line, selected }: { tone: Tone; line: string; selected: boolean }) {
   const t = TONES.find((x) => x.key === tone)!;
   return (
-    <div className={`card preview ${selected ? "is-on" : ""}`}>
-      <div className="preview__label">
+    <Card
+      className={cn(
+        "border-2 border-transparent px-4 py-3.5 opacity-60 shadow-none transition-opacity",
+        selected && "border-accent-foreground opacity-100",
+      )}
+    >
+      <div
+        className={cn(
+          "mb-1 text-[11px] font-bold text-muted-foreground",
+          selected && "font-extrabold text-accent-foreground",
+        )}
+      >
         {t.emoji} {t.label.toUpperCase()}
         {selected ? ", SELECTED" : ""}
       </div>
-      <div className="preview__line">{line}</div>
-    </div>
+      <div className={cn("text-sm font-semibold text-soft", selected && "font-bold text-foreground")}>{line}</div>
+    </Card>
   );
 }
