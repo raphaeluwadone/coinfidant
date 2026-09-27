@@ -3,12 +3,6 @@
   background: var(--bg);
   color: var(--text);
 }
-.ob[data-scheme="light"] {
-  color-scheme: light;
-}
-.ob[data-scheme="dark"] {
-  color-scheme: dark;
-}
 
 /* Phase triads from the Phases handoff; only the reveal uses them for now. */
 .ob[data-phase] {
@@ -61,12 +55,12 @@
   flex: 1;
   height: 6px;
   border-radius: var(--radius-pill);
-  background: light-dark(#d6ddf0, #35323a);
+  background: var(--surface-2);
 }
 .ob-rail__fill {
   height: 6px;
   border-radius: var(--radius-pill);
-  background: light-dark(#6366f1, #818cf8);
+  background: var(--accent);
   transform-origin: left;
   animation: ob-fill 0.6s ease both;
   transition: width 0.4s var(--ease);
@@ -128,10 +122,6 @@
   display: grid;
   gap: 10px;
   margin-top: 16px;
-}
-.ob[data-scheme="dark"] .ob-continue {
-  background: #818cf8;
-  color: #17161a;
 }
 
 /* Inputs */
@@ -540,12 +530,8 @@
     background: var(--bg);
     box-shadow: 0 20px 50px rgba(15, 14, 16, 0.14);
   }
-  .ob[data-scheme="light"] {
-    background: light-dark(#e4e9f7, #17161a);
-  }
-  .ob[data-scheme="dark"],
-  .ob[data-phase] {
-    background: #121214;
+  .ob {
+    background: #0e0d11;
   }
 }
 

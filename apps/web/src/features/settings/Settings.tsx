@@ -1,7 +1,6 @@
 import { sweepPreview, TONES, type Tone } from "@coinfidant/engine";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
 import { BackButton } from "@/components/BackButton";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -11,7 +10,6 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { logout, meQuery } from "@/lib/auth";
 import { type BudgetData, budgetQuery, savePreferences, saveSettings } from "@/lib/budget";
 import { disablePush } from "@/lib/push";
-import { getTheme, setTheme, type ThemeChoice } from "@/lib/theme";
 import { todayQuery } from "@/lib/today";
 import { cn } from "@/lib/utils";
 import { Notifications, YourData } from "./AccountSections";
@@ -25,12 +23,6 @@ const CURRENCIES = [
 ] as const;
 type Currency = (typeof CURRENCIES)[number]["code"];
 
-const THEMES: { key: ThemeChoice; label: string }[] = [
-  { key: "system", label: "🖥️ System" },
-  { key: "light", label: "☀️ Light" },
-  { key: "dark", label: "🌙 Dark" },
-];
-
 const CHECKINS = [
   { key: "evening", label: "🌙 Evening check-in" },
   { key: "drift", label: "📉 Drift alerts" },
@@ -42,7 +34,6 @@ export function Settings() {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const { data } = useQuery(budgetQuery);
-  const [theme, pickTheme] = useState(getTheme);
 
   const refresh = () =>
     Promise.all([
@@ -95,27 +86,6 @@ export function Settings() {
         {TONES.map((t) => (
           <Preview key={t.key} tone={t.key} line={preview[t.key]} selected={me.personality === t.key} />
         ))}
-      </Section>
-
-      <Section title="Appearance">
-        <Row title="Theme" hint="Saved on this device">
-          <ToggleGroup
-            type="single"
-            value={theme}
-            onValueChange={(v) => {
-              if (!v) return;
-              setTheme(v as ThemeChoice);
-              pickTheme(v as ThemeChoice);
-            }}
-            aria-label="Theme"
-          >
-            {THEMES.map((t) => (
-              <ToggleGroupItem key={t.key} value={t.key}>
-                {t.label}
-              </ToggleGroupItem>
-            ))}
-          </ToggleGroup>
-        </Row>
       </Section>
 
       <Section title="Currency">

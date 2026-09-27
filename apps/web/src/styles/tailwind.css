@@ -18,7 +18,7 @@
   --color-popover-foreground: var(--text);
   --color-primary: var(--accent);
   --color-primary-hover: var(--accent-hover);
-  --color-primary-foreground: #ffffff;
+  --color-primary-foreground: var(--accent-ink);
   --color-secondary: var(--surface-2);
   --color-secondary-foreground: var(--text);
   --color-muted: var(--surface-2);
@@ -38,4 +38,6 @@
   --radius-field: 12px;
   --shadow-tile: var(--shadow-card);
   --font-sans: var(--font);
+  /* Named apart from the token it reads, like the two above. */
+  --font-heading: var(--font-display);
 }

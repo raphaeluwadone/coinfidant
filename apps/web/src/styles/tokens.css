@@ -1,95 +1,75 @@
+/* Dark only. Each phase swaps the whole palette; the default covers discovery and anything outside a phase. */
 :root {
   color-scheme: dark;
 
-  --font: "Helvetica Neue", Helvetica, Arial, "Segoe UI", "Noto Sans", system-ui, sans-serif;
+  --font: "Manrope Variable", "Manrope", system-ui, sans-serif;
+  --font-display: "Bricolage Grotesque Variable", "Bricolage Grotesque", var(--font);
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --radius-card: 16px;
+  --radius-card: 20px;
   --radius-pill: 999px;
 
-  /* light-dark(LIGHT, DARK) */
-  --bg: light-dark(#eef1fa, #17161a);
-  --surface: light-dark(#ffffff, #1c1b1f);
-  --surface-2: light-dark(#e4e9f7, #26242a);
-  --text: light-dark(#17161a, #ffffff);
-  --text-soft: light-dark(#47454a, #d8d5d1);
-  --text-muted: light-dark(#86828c, #7d7986);
-  --border: light-dark(#d6ddf0, #47454a);
-  --accent: #6366f1;
-  --accent-hover: #4f46e5;
-  --accent-text: light-dark(#4f46e5, #818cf8);
-  --accent-tint: light-dark(rgba(99, 102, 241, 0.12), rgba(99, 102, 241, 0.16));
-  --success: light-dark(#16a34a, #22c55e);
-  --success-tint: light-dark(rgba(34, 197, 94, 0.1), rgba(201, 127, 196, 0.14));
-  --warn: light-dark(#ea580c, #fb923c);
-  --danger: light-dark(#dc2626, #f87171);
-  --tabbar: light-dark(#ffffff, #1c1b1f);
-  --shadow-card: light-dark(0 0 15px rgba(0, 0, 0, 0.06), 0 0 20px rgba(0, 0, 0, 0.3));
-  --mascot: light-dark(#4f46e5, #818cf8);
-  --mascot-face: light-dark(#ffffff, #17161a);
-  --fab-text: light-dark(#ffffff, #17161a);
-  --fab-shadow: light-dark(0 8px 20px rgba(99, 102, 241, 0.45), 0 8px 20px rgba(0, 0, 0, 0.5));
-  --blob-a: light-dark(rgba(99, 102, 241, 0.22), rgba(99, 102, 241, 0.16));
-  --blob-b: light-dark(rgba(34, 197, 94, 0.18), rgba(201, 127, 196, 0.16));
+  --bg: #131217;
+  --surface: #1a191f;
+  --surface-2: #24222a;
+  --border: #2e2c35;
+  --text: #f6f5f4;
+  --text-soft: #cfcdd3;
+  --text-muted: #85828d;
+  --accent: #818cf8;
+  --accent-hover: #97a0fa;
+  --accent-text: #a5b4fc;
+  --accent-tint: rgba(129, 140, 248, 0.16);
+  /* Text and icons sitting on an accent-filled surface. */
+  --accent-ink: #12122a;
+  --success: #4ade80;
+  --success-tint: rgba(74, 222, 128, 0.14);
+  --warn: #fbbf24;
+  --danger: #ff6464;
+  --tabbar: var(--surface);
+  --shadow-card: none;
+  --mascot: var(--accent);
+  --mascot-face: var(--accent-ink);
+  --fab-text: var(--accent-ink);
+  --fab-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --blob-a: transparent;
+  --blob-b: transparent;
 }
 
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme="dark"]) {
-    color-scheme: light;
-  }
-}
-:root[data-theme="light"] {
-  color-scheme: light;
-}
-:root[data-theme="dark"] {
-  color-scheme: dark;
-}
-
-/*
- * Phase re-skins (Phases handoff). Dark mode takes the full background, card and accent triad;
- * light mode keeps its surfaces and takes only the accent, in deeper shades that hold contrast on white.
- */
 [data-phase="stabilise"] {
-  --accent: light-dark(#0b7f7b, #0ea5a0);
-  --accent-hover: light-dark(#09635f, #0b8f8a);
-  --accent-text: light-dark(#0b7f7b, #5eead4);
-  --accent-tint: light-dark(rgba(14, 165, 160, 0.12), rgba(14, 165, 160, 0.18));
-  --mascot: light-dark(#0b7f7b, #5eead4);
-  --fab-text: light-dark(#ffffff, #0b1615);
-  --bg: light-dark(#eef1fa, #0b1615);
-  --surface: light-dark(#ffffff, #122120);
-  --surface-2: light-dark(#e4e9f7, #1a2e2c);
-  --border: light-dark(#d6ddf0, #2c4442);
-  --tabbar: light-dark(#ffffff, #122120);
-  --text-muted: light-dark(#86828c, #7c9b98);
-  --blob-a: light-dark(rgba(14, 165, 160, 0.18), rgba(14, 165, 160, 0.16));
+  --bg: #0b1416;
+  --surface: #0f1b1e;
+  --surface-2: #16262a;
+  --border: #1d3035;
+  --text-muted: #7f9699;
+  --accent: #2dd4bf;
+  --accent-hover: #4fdecc;
+  --accent-text: #5eead4;
+  --accent-tint: rgba(45, 212, 191, 0.14);
+  --accent-ink: #062320;
 }
+
 [data-phase="attack"] {
-  --accent: light-dark(#dc2626, #ef4444);
-  --accent-hover: light-dark(#b91c1c, #dc2626);
-  --accent-text: light-dark(#b91c1c, #fca5a5);
-  --accent-tint: light-dark(rgba(239, 68, 68, 0.12), rgba(239, 68, 68, 0.18));
-  --mascot: light-dark(#dc2626, #f87171);
-  --fab-text: light-dark(#ffffff, #170f0f);
-  --bg: light-dark(#eef1fa, #170f0f);
-  --surface: light-dark(#ffffff, #221515);
-  --surface-2: light-dark(#e4e9f7, #2e1b1b);
-  --border: light-dark(#d6ddf0, #4a2e2e);
-  --tabbar: light-dark(#ffffff, #221515);
-  --text-muted: light-dark(#86828c, #b08888);
-  --blob-a: light-dark(rgba(239, 68, 68, 0.16), rgba(239, 68, 68, 0.16));
+  --bg: #120a08;
+  --surface: #1b100c;
+  --surface-2: #261712;
+  --border: #36221b;
+  --text-muted: #a08880;
+  --accent: #ff5a2c;
+  --accent-hover: #ff7249;
+  --accent-text: #ff8a5f;
+  --accent-tint: rgba(255, 90, 44, 0.15);
+  --accent-ink: #1c0803;
 }
+
 [data-phase="build"] {
-  --accent: light-dark(#15803d, #22c55e);
-  --accent-hover: light-dark(#166534, #16a34a);
-  --accent-text: light-dark(#15803d, #86efac);
-  --accent-tint: light-dark(rgba(34, 197, 94, 0.12), rgba(34, 197, 94, 0.18));
-  --mascot: light-dark(#15803d, #4ade80);
-  --fab-text: light-dark(#ffffff, #0f160f);
-  --bg: light-dark(#eef1fa, #0f160f);
-  --surface: light-dark(#ffffff, #16211a);
-  --surface-2: light-dark(#e4e9f7, #203027);
-  --border: light-dark(#d6ddf0, #34473a);
-  --tabbar: light-dark(#ffffff, #16211a);
-  --text-muted: light-dark(#86828c, #8faf8c);
-  --blob-a: light-dark(rgba(34, 197, 94, 0.16), rgba(34, 197, 94, 0.16));
+  --bg: #0d1208;
+  --surface: #131a0d;
+  --surface-2: #1c2614;
+  --border: #29361d;
+  --text-muted: #8c9a7c;
+  --accent: #c6f24a;
+  --accent-hover: #d3f76e;
+  --accent-text: #d9f99d;
+  --accent-tint: rgba(198, 242, 74, 0.14);
+  --accent-ink: #141c05;
 }

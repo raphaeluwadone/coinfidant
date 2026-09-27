@@ -1,4 +1,5 @@
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
+import { PhaseFrame } from "../components/PhaseFrame";
 import { meQuery } from "../lib/auth";
 import { budgetQuery } from "../lib/budget";
 
@@ -12,5 +13,5 @@ export const Route = createFileRoute("/_app")({
     if (budget && onboarding) throw redirect({ to: "/" });
     return { user, budget };
   },
-  component: Outlet,
+  component: PhaseFrame,
 });

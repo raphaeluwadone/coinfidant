@@ -4,6 +4,8 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { ToastHost } from "./components/Toasts";
 import { routeTree } from "./routeTree.gen";
+import "@fontsource-variable/bricolage-grotesque";
+import "@fontsource-variable/manrope";
 import "./styles/tailwind.css";
 import "./styles/tokens.css";
 import "./styles/base.css";

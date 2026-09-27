@@ -59,7 +59,6 @@ export function Onboarding() {
   });
 
   const current = STEPS[step - 1];
-  const scheme = step === 9 ? "dark" : step === TOTAL ? "phase" : "light";
   const next = () => {
     const to = seenPlan ? TOTAL : Math.min(TOTAL, step + 1);
     if (to === TOTAL) setSeenPlan(true);
@@ -77,7 +76,7 @@ export function Onboarding() {
   };
 
   return (
-    <div className="ob" data-scheme={scheme} data-phase={step === TOTAL ? reading.phase : undefined}>
+    <div className="ob" data-phase={step === TOTAL ? reading.phase : undefined}>
       <main className="ob-screen">
         {step === TOTAL && (
           <div className="ob-top">

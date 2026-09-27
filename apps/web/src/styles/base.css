@@ -7,12 +7,14 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Preflight makes headings inherit weight; screens were designed on bold headings. */
+/* Preflight makes headings inherit weight; headings use the display face. */
 @layer base {
   h1,
   h2,
   h3 {
+    font-family: var(--font-display);
     font-weight: 700;
+    letter-spacing: -0.01em;
   }
 }
 

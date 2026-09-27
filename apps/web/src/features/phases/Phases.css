@@ -196,7 +196,7 @@
   animation: hp-pulse 2.4s ease-in-out infinite;
 }
 .hp__fill.is-queued {
-  background: light-dark(#f87171, #b45353);
+  background: #b45353;
 }
 .hp__fill.is-defeated {
   background: var(--success);
@@ -256,28 +256,23 @@
   }
 }
 
-/* Sinking fund detail: a cross-phase utility, always in the light theme. */
+/* Sinking fund detail. */
 .fund {
-  color-scheme: light;
   display: grid;
   gap: 16px;
   max-width: 520px;
   padding: 20px;
+  border: 1px solid var(--border);
   border-radius: var(--radius-card);
-  background: #eef1fa;
-  color: #17161a;
-  --surface: #ffffff;
-  --surface-2: #e4e9f7;
-  --text-muted: #86828c;
-  --success: #16a34a;
-  --warn: #ea580c;
+  background: var(--surface);
+  color: var(--text);
 }
 .fund__pot {
   position: relative;
   justify-self: center;
   width: 120px;
   height: 150px;
-  border: 3px solid #17161a;
+  border: 3px solid var(--text-soft);
   border-top-width: 0;
   border-radius: 0 0 28px 28px;
   overflow: hidden;
@@ -285,7 +280,7 @@
 .fund__pot > div {
   position: absolute;
   inset: auto 0 0;
-  background: linear-gradient(180deg, #818cf8, #6366f1);
+  background: var(--accent);
   transition: height 0.8s var(--ease);
 }
 .fund__hero {

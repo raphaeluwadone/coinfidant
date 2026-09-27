@@ -8,7 +8,10 @@ export function Card({ className, asChild = false, ...props }: ComponentProps<"d
   return (
     <Comp
       data-slot="card"
-      className={cn("block rounded-tile bg-card p-5 text-card-foreground no-underline shadow-tile", className)}
+      className={cn(
+        "block rounded-tile border border-border bg-card p-5 text-card-foreground no-underline shadow-tile",
+        className,
+      )}
       {...props}
     />
   );

@@ -1,8 +1,8 @@
 // Coinfidant service worker: app-shell caching and push check-ins. API responses are never cached.
-const VERSION = "v2";
+const VERSION = "v3";
 const SHELL = `shell-${VERSION}`;
 const ASSETS = `assets-${VERSION}`;
-const PRECACHE = ["/", "/theme.js", "/manifest.webmanifest", "/icons/icon-192.png", "/icons/icon-512.png"];
+const PRECACHE = ["/", "/manifest.webmanifest", "/icons/icon-192.png", "/icons/icon-512.png"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(SHELL).then((c) => c.addAll(PRECACHE)));
