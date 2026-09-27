@@ -3,6 +3,7 @@ import { localDate } from "@coinfidant/engine";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { type ComponentType, useMemo, useReducer, useState } from "react";
+import { Button } from "@/components/ui/button";
 import { api } from "../../lib/api";
 import { budgetQuery } from "../../lib/budget";
 import { todayQuery, type TodayData } from "../../lib/today";
@@ -80,17 +81,29 @@ export function Onboarding() {
       <main className="ob-screen">
         {step === TOTAL && (
           <div className="ob-top">
-            <button className="ob-back" onClick={() => setStep(TOTAL - 1)} aria-label="Back">
+            <Button
+              variant="soft"
+              size="icon"
+              className="size-[30px] font-extrabold text-muted-foreground"
+              onClick={() => setStep(TOTAL - 1)}
+              aria-label="Back"
+            >
               ←
-            </button>
+            </Button>
           </div>
         )}
         {step < TOTAL && (
           <div className="ob-top">
             {step > 1 && (
-              <button className="ob-back" onClick={() => setStep((s) => s - 1)} aria-label="Back">
+              <Button
+                variant="soft"
+                size="icon"
+                className="size-[30px] font-extrabold text-muted-foreground"
+                onClick={() => setStep((s) => s - 1)}
+                aria-label="Back"
+              >
                 ←
-              </button>
+              </Button>
             )}
             <div className="ob-rail" role="progressbar" aria-valuemin={1} aria-valuemax={TOTAL} aria-valuenow={step}>
               <div key={step} className="ob-rail__fill" style={{ width: `${(step / TOTAL) * 100}%` }} />
@@ -104,17 +117,17 @@ export function Onboarding() {
               <current.Component a={a} set={set} today={today} />
             </div>
             <div className="ob-foot">
-              <button
-                className="btn ob-continue"
+              <Button
+                className="ob-continue w-full font-extrabold"
                 onClick={next}
                 disabled={current.canContinue ? !current.canContinue(a) : false}
               >
                 {seenPlan ? "Back to my plan" : step === 1 ? "Let's go" : "Continue"}
-              </button>
+              </Button>
               {current.skippable && (
-                <button className="link-btn ob-skip" onClick={skip}>
+                <Button variant="muted" size="inline" className="justify-self-center text-xs" onClick={skip}>
                   Skip for now
-                </button>
+                </Button>
               )}
             </div>
           </>

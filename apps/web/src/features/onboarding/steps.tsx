@@ -12,9 +12,17 @@ import {
   sinkingSetAside,
   sweepPreview,
   TONES,
+  type Tone,
 } from "@coinfidant/engine";
-import { type ReactNode, useState } from "react";
-import { MoneyInput } from "../../components/MoneyInput";
+import { type ComponentProps, type ReactNode, useState } from "react";
+import { MoneyInput } from "@/components/MoneyInput";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Toggle, ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { cn } from "@/lib/utils";
 import { OnboardingMascot } from "./OnboardingMascot";
 import { type Answers, billEmoji, CREDITORS, creditorEmoji, salaryDate } from "./state";
 
@@ -35,29 +43,40 @@ const Reaction = ({ children }: { children: ReactNode }) => (
 
 const Label = ({ children }: { children: ReactNode }) => <div className="ob-label">{children}</div>;
 
+/** Onboarding's compact card: tighter than the app's, same component. */
+const ObCard = ({ className, ...props }: ComponentProps<typeof Card>) => (
+  <Card className={cn("rounded-field px-3.5 py-3 shadow-[0_0_8px_rgba(0,0,0,0.05)]", className)} {...props} />
+);
+
+const ROW_ICON = "size-6 text-[11px] text-muted-foreground hover:text-foreground";
+
 const RowActions = ({ onEdit, onRemove, what }: { onEdit: () => void; onRemove: () => void; what: string }) => (
-  <span className="ob-row-actions">
-    <button type="button" className="ob-edit" onClick={onEdit} aria-label={`Edit ${what}`}>
+  <span className="flex shrink-0 gap-1.5">
+    <Button variant="soft" size="icon" className={ROW_ICON} onClick={onEdit} aria-label={`Edit ${what}`}>
       ✎
-    </button>
-    <button type="button" className="ob-remove" onClick={onRemove} aria-label={`Remove ${what}`}>
+    </Button>
+    <Button variant="soft" size="icon" className={ROW_ICON} onClick={onRemove} aria-label={`Remove ${what}`}>
       ✕
-    </button>
+    </Button>
   </span>
 );
 
 /** An item's form opened in place of its row, prefilled, saving back to the same slot. */
-const EditCard = ({ children }: { children: ReactNode }) => <div className="ob-card ob-form">{children}</div>;
+const EditCard = ({ children }: { children: ReactNode }) => <ObCard className="ob-form">{children}</ObCard>;
 
 function Adder({ label, children }: { label: string; children: (close: () => void) => ReactNode }) {
   const [open, setOpen] = useState(false);
   if (!open)
     return (
-      <button type="button" className="ob-add" onClick={() => setOpen(true)}>
+      <Button
+        variant="outline"
+        className="h-auto justify-start rounded-field border-2 border-dashed px-3.5 py-3 text-[13px] text-muted-foreground hover:border-accent-foreground hover:bg-transparent hover:text-accent-foreground active:scale-100"
+        onClick={() => setOpen(true)}
+      >
         + {label}
-      </button>
+      </Button>
     );
-  return <div className="ob-card ob-form">{children(() => setOpen(false))}</div>;
+  return <ObCard className="ob-form">{children(() => setOpen(false))}</ObCard>;
 }
 
 const without = <T,>(list: T[], i: number) => list.filter((_, k) => k !== i);
@@ -75,27 +94,33 @@ export function Welcome({ a, set }: StepProps) {
         Your loyal, slightly chaotic money friend. Five minutes and I'll build you a real plan.
       </p>
       <div className="ob-label ob-welcome__ask">How much sass do you want?</div>
-      <div className="ob-dial" role="radiogroup" aria-label="Personality">
+      <ToggleGroup
+        type="single"
+        variant="chips"
+        value={a.personality}
+        onValueChange={(v) => v && set({ personality: v as Tone })}
+        aria-label="Personality"
+        className="w-full flex-nowrap"
+      >
         {TONES.map((t) => (
-          <button
+          <ToggleGroupItem
             key={t.key}
-            type="button"
-            role="radio"
-            aria-checked={a.personality === t.key}
-            className={`ob-dial__opt ${a.personality === t.key ? "is-on" : ""}`}
-            onClick={() => set({ personality: t.key })}
+            value={t.key}
+            className="grid flex-1 gap-1 rounded-[14px] bg-card px-1.5 py-3 text-[11px] font-bold shadow-[0_0_10px_rgba(0,0,0,0.05)] active:scale-[0.96] data-[state=on]:shadow-[0_6px_16px_rgba(79,70,229,0.35)]"
           >
-            <span className="ob-dial__emoji">{t.emoji}</span>
+            <span className="text-xl">{t.emoji}</span>
             {t.label}
-          </button>
+          </ToggleGroupItem>
         ))}
-      </div>
-      <div className="ob-card ob-preview">"{sweepPreview(4_200_00)[a.personality]}"</div>
+      </ToggleGroup>
+      <ObCard className="ob-preview">"{sweepPreview(4_200_00)[a.personality]}"</ObCard>
     </div>
   );
 }
 
 // Step 2
+const GROW_CHIP = "flex-1 bg-card p-2.5";
+
 const PAYDAY_PICKS = [
   { day: 31, label: "31st / 1st" },
   { day: 25, label: "25th" },
@@ -115,46 +140,49 @@ export function Payday({ a, set, today }: StepProps) {
         autoFocus
       />
       <Label>Payday</Label>
-      <div className="ob-chips">
+      <ToggleGroup
+        type="single"
+        variant="chips"
+        value={other ? "other" : String(a.expectedPayday)}
+        onValueChange={(v) => {
+          if (!v) return;
+          if (v === "other") return setOther(true);
+          setOther(false);
+          set({ expectedPayday: Number(v), lastSalaryOn: null });
+        }}
+        aria-label="Payday"
+        className="flex-nowrap"
+      >
         {PAYDAY_PICKS.map((p) => (
-          <button
-            key={p.day}
-            type="button"
-            className={`ob-chip ob-chip--grow ${!other && a.expectedPayday === p.day ? "is-on" : ""}`}
-            onClick={() => {
-              setOther(false);
-              set({ expectedPayday: p.day, lastSalaryOn: null });
-            }}
-          >
+          <ToggleGroupItem key={p.day} value={String(p.day)} className={GROW_CHIP}>
             {p.label}
-          </button>
+          </ToggleGroupItem>
         ))}
-        <button
-          type="button"
-          className={`ob-chip ob-chip--grow ${other ? "is-on" : ""}`}
-          onClick={() => setOther(true)}
-        >
+        <ToggleGroupItem value="other" className={GROW_CHIP}>
           Other
-        </button>
-      </div>
+        </ToggleGroupItem>
+      </ToggleGroup>
       {other && (
-        <select
-          className="select ob-select"
-          value={a.expectedPayday}
-          onChange={(e) => set({ expectedPayday: Number(e.target.value), lastSalaryOn: null })}
-          aria-label="Payday"
+        <Select
+          value={String(a.expectedPayday)}
+          onValueChange={(v) => set({ expectedPayday: Number(v), lastSalaryOn: null })}
         >
-          {Array.from({ length: 30 }, (_, i) => i + 1).map((d) => (
-            <option key={d} value={d}>
-              Day {d} of the month
-            </option>
-          ))}
-        </select>
+          <SelectTrigger className="bg-card" aria-label="Payday">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className="max-h-72">
+            {Array.from({ length: 30 }, (_, i) => i + 1).map((d) => (
+              <SelectItem key={d} value={String(d)}>
+                Day {d} of the month
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       )}
       <label className="ob-inline">
         <span>Last one landed on</span>
-        <input
-          className="text-input"
+        <Input
+          className="h-10 w-auto bg-card"
           type="date"
           value={salaryDate(a, today)}
           max={today}
@@ -185,7 +213,7 @@ export function Bills({ a, set }: StepProps) {
               />
             </EditCard>
           ) : (
-            <div key={i} className="ob-card ob-row">
+            <ObCard key={i} className="ob-row">
               <span className="ob-row__emoji">{billEmoji(b.name)}</span>
               <span className="ob-row__name">{b.name}</span>
               <span className="ob-row__amount">{formatMoney(b.amount)}</span>
@@ -194,19 +222,19 @@ export function Bills({ a, set }: StepProps) {
                 onRemove={() => (set({ bills: without(a.bills, i) }), setEditing(null))}
                 what={b.name}
               />
-            </div>
+            </ObCard>
           ),
         )}
         <Adder label="Add a bill">
           {(close) => <BillForm onAdd={(b) => (set({ bills: [...a.bills, b] }), close())} onCancel={close} />}
         </Adder>
       </div>
-      <div className="ob-card ob-total">
+      <ObCard className="ob-total">
         <span>Total</span>
         <strong>
           {formatMoney(total)} <em>· {Math.round(pct)}%</em>
         </strong>
-      </div>
+      </ObCard>
       <Reaction>{billsLine(pct, a.personality)}</Reaction>
     </>
   );
@@ -217,8 +245,8 @@ function BillForm({ initial, onAdd, onCancel }: FormProps<Answers["bills"][numbe
   const [amount, setAmount] = useState(initial?.amount ?? 0);
   return (
     <>
-      <input
-        className="text-input"
+      <Input
+        className="bg-card"
         placeholder="Electricity, data, cleaner…"
         value={name}
         maxLength={40}
@@ -249,12 +277,12 @@ function FormActions({
 }) {
   return (
     <div className="ob-form__actions">
-      <button type="button" className="link-btn ob-form__cancel" onClick={onCancel}>
+      <Button variant="muted" size="inline" onClick={onCancel}>
         Cancel
-      </button>
-      <button type="button" className="btn ob-form__add" disabled={disabled} onClick={onAdd}>
+      </Button>
+      <Button size="sm" disabled={disabled} onClick={onAdd}>
         {editing ? "Save" : "Add"}
-      </button>
+      </Button>
     </div>
   );
 }
@@ -288,7 +316,7 @@ export function BigBills({ a, set, today }: StepProps) {
               />
             </EditCard>
           ) : (
-            <div key={i} className="ob-card ob-fund">
+            <ObCard key={i} className="ob-fund">
               <div className="ob-fund__top">
                 <strong>🏠 {f.name}</strong>
                 <strong>{formatMoney(f.target)}</strong>
@@ -310,7 +338,7 @@ export function BigBills({ a, set, today }: StepProps) {
                 )}
                 /month for this →
               </div>
-            </div>
+            </ObCard>
           ),
         )}
         <Adder label="Add another big bill">
@@ -339,8 +367,8 @@ function FundForm({
   const [month, setMonth] = useState(initial?.dueDate.slice(0, 7) ?? "");
   return (
     <>
-      <input
-        className="text-input"
+      <Input
+        className="bg-card"
         placeholder="Rent, school fees…"
         value={name}
         maxLength={40}
@@ -350,8 +378,8 @@ function FundForm({
       <MoneyInput value={target} onChange={setTarget} aria-label="Amount" />
       <label className="ob-inline">
         <span>Due in</span>
-        <input
-          className="text-input"
+        <Input
+          className="h-10 w-auto bg-card"
           type="month"
           min={today.slice(0, 7)}
           value={month}
@@ -393,7 +421,7 @@ export function Debts({ a, set }: StepProps) {
               />
             </EditCard>
           ) : (
-            <div key={i} className="ob-card ob-debt">
+            <ObCard key={i} className="ob-debt">
               <div className="ob-debt__top">
                 <strong>
                   {creditorEmoji(d.creditor)} {d.name}
@@ -409,20 +437,22 @@ export function Debts({ a, set }: StepProps) {
                 {planLabel(d)}
                 {d.hasInterest ? " · interest or penalties" : ""}
               </div>
-            </div>
+            </ObCard>
           ),
         )}
         {bulk ? (
-          <div className="ob-card ob-form">
+          <ObCard className="ob-form">
             <BulkDebtForm
               onAdd={(ds) => (set({ debts: [...a.debts, ...ds] }), setBulk(false))}
               onCancel={() => setBulk(false)}
             />
-          </div>
+          </ObCard>
         ) : (
-          <button type="button" className="ob-card ob-shortcut" onClick={() => setBulk(true)}>
-            ⚡ Shortcut: "I have 8 loan-app loans, ~NGN 45,000 each"
-          </button>
+          <ObCard asChild className="ob-shortcut">
+            <button type="button" onClick={() => setBulk(true)}>
+              ⚡ Shortcut: "I have 8 loan-app loans, ~NGN 45,000 each"
+            </button>
+          </ObCard>
         )}
         <Adder label="Add a debt">
           {(close) => <DebtForm onAdd={(d) => (set({ debts: [...a.debts, d] }), close())} onCancel={close} />}
@@ -460,20 +490,21 @@ function DebtForm({ initial, onAdd, onCancel }: FormProps<DebtInput>) {
 
   return (
     <>
-      <div className="ob-chips">
+      <ToggleGroup
+        type="single"
+        variant="chips"
+        value={creditor}
+        onValueChange={(v) => v && setCreditor(v)}
+        aria-label="Who it's owed to"
+      >
         {CREDITORS.map((c) => (
-          <button
-            key={c.label}
-            type="button"
-            className={`ob-chip ${creditor === c.label ? "is-on" : ""}`}
-            onClick={() => setCreditor(c.label)}
-          >
+          <ToggleGroupItem key={c.label} value={c.label} className="bg-card">
             {c.emoji} {c.label}
-          </button>
+          </ToggleGroupItem>
         ))}
-      </div>
-      <input
-        className="text-input"
+      </ToggleGroup>
+      <Input
+        className="bg-card"
         placeholder="Who is it? e.g. OPay, Uncle Tunde"
         value={name}
         maxLength={40}
@@ -482,26 +513,23 @@ function DebtForm({ initial, onAdd, onCancel }: FormProps<DebtInput>) {
       />
       <Label>Amount left</Label>
       <MoneyInput value={left} onChange={setLeft} aria-label="Amount left" />
-      <div className="ob-seg" role="radiogroup" aria-label="Repayment">
-        {(
-          [
-            ["installments", "Fixed monthly"],
-            ["flexible", "Flexible"],
-            ["oneOff", "One-off"],
-          ] as const
-        ).map(([k, label]) => (
-          <button
-            key={k}
-            type="button"
-            role="radio"
-            aria-checked={kind === k}
-            className={kind === k ? "is-on" : ""}
-            onClick={() => setKind(k)}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <ToggleGroup
+        type="single"
+        value={kind}
+        onValueChange={(v) => v && setKind(v as DebtInput["plan"]["kind"])}
+        aria-label="Repayment"
+        className={SEG}
+      >
+        <ToggleGroupItem value="installments" className={SEG_ITEM}>
+          Fixed monthly
+        </ToggleGroupItem>
+        <ToggleGroupItem value="flexible" className={SEG_ITEM}>
+          Flexible
+        </ToggleGroupItem>
+        <ToggleGroupItem value="oneOff" className={SEG_ITEM}>
+          One-off
+        </ToggleGroupItem>
+      </ToggleGroup>
       {kind === "installments" && (
         <MoneyInput value={perCycle} onChange={setPerCycle} aria-label="Monthly repayment" placeholder="Per month" />
       )}
@@ -512,16 +540,16 @@ function DebtForm({ initial, onAdd, onCancel }: FormProps<DebtInput>) {
         </div>
       )}
       {kind === "oneOff" && (
-        <input
-          className="text-input"
+        <Input
+          className="bg-card"
           type="date"
           value={due}
           onChange={(e) => setDue(e.target.value)}
           aria-label="Due date"
         />
       )}
-      <label className="ob-check">
-        <input type="checkbox" checked={interest} onChange={(e) => setInterest(e.target.checked)} />
+      <label className="flex items-center gap-2 text-[13px] font-semibold text-soft">
+        <Checkbox checked={interest} onCheckedChange={(v) => setInterest(v === true)} />
         Charges interest or late penalties
       </label>
       <FormActions
@@ -541,8 +569,8 @@ function BulkDebtForm({ onAdd, onCancel }: { onAdd: (d: DebtInput[]) => void; on
   return (
     <>
       <Label>How many similar loans?</Label>
-      <input
-        className="text-input"
+      <Input
+        className="bg-card"
         type="number"
         min={2}
         max={30}
@@ -593,7 +621,7 @@ export function Goals({ a, set }: StepProps) {
               />
             </EditCard>
           ) : (
-            <div key={`g${i}`} className="ob-card ob-goal">
+            <ObCard key={`g${i}`} className="ob-goal">
               <div className="ob-debt__top">
                 <strong>
                   {g.emoji} {g.name}
@@ -605,7 +633,7 @@ export function Goals({ a, set }: StepProps) {
                 />
               </div>
               <div className="ob-muted">Target {formatMoney(g.target)}</div>
-            </div>
+            </ObCard>
           ),
         )}
         {a.commitments.map((c, i) =>
@@ -619,7 +647,7 @@ export function Goals({ a, set }: StepProps) {
               />
             </EditCard>
           ) : (
-            <div key={`c${i}`} className="ob-card ob-goal">
+            <ObCard key={`c${i}`} className="ob-goal">
               <div className="ob-debt__top">
                 <strong>👤 {c.name}</strong>
                 <RowActions
@@ -638,7 +666,7 @@ export function Goals({ a, set }: StepProps) {
                   {formatMoney(c.ideal)}
                 </div>
               </div>
-            </div>
+            </ObCard>
           ),
         )}
         <Adder label="Add a goal or person">
@@ -655,6 +683,9 @@ export function Goals({ a, set }: StepProps) {
     </>
   );
 }
+
+const SEG = "rounded-field p-1";
+const SEG_ITEM = "flex-1 rounded-[9px] px-1.5 py-2";
 
 type GoalInitial =
   { kind: "goal"; goal: Answers["goals"][number] } | { kind: "person"; person: Answers["commitments"][number] };
@@ -681,44 +712,38 @@ function GoalForm({
   return (
     <>
       {!initial && (
-        <div className="ob-seg" role="radiogroup" aria-label="What to add">
-          <button
-            type="button"
-            role="radio"
-            aria-checked={kind === "goal"}
-            className={kind === "goal" ? "is-on" : ""}
-            onClick={() => setKind("goal")}
-          >
+        <ToggleGroup
+          type="single"
+          value={kind}
+          onValueChange={(v) => v && setKind(v as "goal" | "person")}
+          aria-label="What to add"
+          className={SEG}
+        >
+          <ToggleGroupItem value="goal" className={SEG_ITEM}>
             🎯 A goal
-          </button>
-          <button
-            type="button"
-            role="radio"
-            aria-checked={kind === "person"}
-            className={kind === "person" ? "is-on" : ""}
-            onClick={() => setKind("person")}
-          >
+          </ToggleGroupItem>
+          <ToggleGroupItem value="person" className={SEG_ITEM}>
             👤 Someone I support
-          </button>
-        </div>
+          </ToggleGroupItem>
+        </ToggleGroup>
       )}
       {kind === "goal" && (
-        <div className="ob-chips">
+        <ToggleGroup
+          type="single"
+          variant="chips"
+          value={emoji}
+          onValueChange={(v) => v && setEmoji(v)}
+          aria-label="Goal emoji"
+        >
           {GOAL_EMOJI.map((e) => (
-            <button
-              key={e}
-              type="button"
-              className={`ob-chip ob-chip--emoji ${emoji === e ? "is-on" : ""}`}
-              onClick={() => setEmoji(e)}
-              aria-label={e}
-            >
+            <ToggleGroupItem key={e} value={e} aria-label={e} className="bg-card px-2.5 py-2 text-lg">
               {e}
-            </button>
+            </ToggleGroupItem>
           ))}
-        </div>
+        </ToggleGroup>
       )}
-      <input
-        className="text-input"
+      <Input
+        className="bg-card"
         placeholder={kind === "goal" ? "Japa fund, new laptop…" : "Sister, mum…"}
         value={name}
         maxLength={40}
@@ -756,15 +781,17 @@ export function Everyday({ a, set }: StepProps) {
         onChange={(everydayEstimate) => set({ everydayEstimate, discovery: false })}
         aria-label="Everyday spending a month"
       />
-      <button
-        type="button"
-        className={`ob-noidea ${a.discovery ? "is-on" : ""}`}
-        aria-pressed={a.discovery}
-        onClick={() => set({ discovery: !a.discovery })}
+      <Toggle
+        variant="tiles"
+        pressed={a.discovery}
+        onPressedChange={(discovery) => set({ discovery })}
+        className="justify-items-center gap-1 rounded-[14px] border-primary bg-transparent p-4 text-center data-[state=on]:border-primary data-[state=on]:bg-accent"
       >
-        <strong>🔍 No idea</strong>
-        <span>Starts a Discovery cycle: one month of just logging, no judgment.</span>
-      </button>
+        <strong className="text-[15px] font-extrabold text-accent-foreground">🔍 No idea</strong>
+        <span className="text-xs font-semibold text-soft">
+          Starts a Discovery cycle: one month of just logging, no judgment.
+        </span>
+      </Toggle>
       {(a.discovery || a.everydayEstimate > 0) && <Reaction>{everydayLine(a.discovery)[a.personality]}</Reaction>}
     </>
   );
@@ -783,39 +810,38 @@ const TIMES: { key: OnboardingInput["overspendTimes"][number]; label: string }[]
   { key: "weekends", label: "🎉 Weekends" },
   { key: "monthEnd", label: "📆 Month end" },
 ];
-const toggle = <T,>(list: T[], v: T) => (list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
 
 export function Leaks({ a, set }: StepProps) {
   return (
     <>
       <Head title="Where does money leak? 🕳️" />
-      <div className="ob-chips ob-chips--wrap">
+      <ToggleGroup
+        type="multiple"
+        variant="chips"
+        value={a.leakCategories}
+        onValueChange={(v) => set({ leakCategories: v as Answers["leakCategories"] })}
+        aria-label="Where money leaks"
+      >
         {LEAKS.map((l) => (
-          <button
-            key={l.key}
-            type="button"
-            aria-pressed={a.leakCategories.includes(l.key)}
-            className={`ob-chip ${a.leakCategories.includes(l.key) ? "is-on" : ""}`}
-            onClick={() => set({ leakCategories: toggle(a.leakCategories, l.key) })}
-          >
+          <ToggleGroupItem key={l.key} value={l.key} className="bg-card">
             {l.label}
-          </button>
+          </ToggleGroupItem>
         ))}
-      </div>
+      </ToggleGroup>
       <div className="ob-subhead">When does it usually happen?</div>
-      <div className="ob-chips ob-chips--wrap">
+      <ToggleGroup
+        type="multiple"
+        variant="chips"
+        value={a.overspendTimes}
+        onValueChange={(v) => set({ overspendTimes: v as Answers["overspendTimes"] })}
+        aria-label="When it happens"
+      >
         {TIMES.map((l) => (
-          <button
-            key={l.key}
-            type="button"
-            aria-pressed={a.overspendTimes.includes(l.key)}
-            className={`ob-chip ${a.overspendTimes.includes(l.key) ? "is-on" : ""}`}
-            onClick={() => set({ overspendTimes: toggle(a.overspendTimes, l.key) })}
-          >
+          <ToggleGroupItem key={l.key} value={l.key} className="bg-card">
             {l.label}
-          </button>
+          </ToggleGroupItem>
         ))}
-      </div>
+      </ToggleGroup>
       {a.overspendTimes.includes("afterPayday") && (
         <div className="ob-reaction ob-paydaymode">
           <strong>💸 Payday mode switched on</strong>
@@ -837,41 +863,36 @@ export function OnTrack({ a, set }: StepProps) {
   return (
     <>
       <Head title="How should I keep you honest? 🌙" />
-      <div className="ob-list" role="radiogroup" aria-label="Check-ins">
+      <ToggleGroup
+        type="single"
+        variant="tiles"
+        value={a.checkinMethod}
+        onValueChange={(v) => v && set({ checkinMethod: v as Answers["checkinMethod"] })}
+        aria-label="Check-ins"
+      >
         {CHECKINS.map((c) => (
-          <button
-            key={c.key}
-            type="button"
-            role="radio"
-            aria-checked={a.checkinMethod === c.key}
-            className={`ob-option ${a.checkinMethod === c.key ? "is-on" : ""}`}
-            onClick={() => set({ checkinMethod: c.key })}
-          >
-            <strong>{c.title}</strong>
-            {c.sub && <span>{c.sub}</span>}
-          </button>
+          <ToggleGroupItem key={c.key} value={c.key}>
+            <strong className="text-sm font-bold">{c.title}</strong>
+            {c.sub && <span className="text-xs font-semibold text-muted-foreground">{c.sub}</span>}
+          </ToggleGroupItem>
         ))}
-      </div>
+      </ToggleGroup>
       <div className="ob-subhead">Weekly leftovers should go to…</div>
-      <div className="ob-pair" role="radiogroup" aria-label="Weekly leftovers">
-        {(
-          [
-            ["debts", "⚔️ Debts first"],
-            ["savings", "🌱 Savings first"],
-          ] as const
-        ).map(([k, label]) => (
-          <button
-            key={k}
-            type="button"
-            role="radio"
-            aria-checked={a.leftoverDefault === k}
-            className={`ob-option ob-option--center ${a.leftoverDefault === k ? "is-on" : ""}`}
-            onClick={() => set({ leftoverDefault: k })}
-          >
-            <strong>{label}</strong>
-          </button>
-        ))}
-      </div>
+      <ToggleGroup
+        type="single"
+        variant="tiles"
+        value={a.leftoverDefault}
+        onValueChange={(v) => v && set({ leftoverDefault: v as Answers["leftoverDefault"] })}
+        aria-label="Weekly leftovers"
+        className="grid grid-cols-2"
+      >
+        <ToggleGroupItem value="debts" className="justify-items-center text-center">
+          <strong className="text-sm font-bold">⚔️ Debts first</strong>
+        </ToggleGroupItem>
+        <ToggleGroupItem value="savings" className="justify-items-center text-center">
+          <strong className="text-sm font-bold">🌱 Savings first</strong>
+        </ToggleGroupItem>
+      </ToggleGroup>
     </>
   );
 }

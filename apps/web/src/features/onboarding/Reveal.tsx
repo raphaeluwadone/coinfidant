@@ -9,6 +9,7 @@ import {
   TONES,
 } from "@coinfidant/engine";
 import { useMemo } from "react";
+import { Button } from "@/components/ui/button";
 import { type Answers, previewInput } from "./state";
 
 type Props = {
@@ -191,12 +192,21 @@ export function Reveal({ a, today, saving, error, onConfirm, onEdit }: Props) {
             That didn't save. Check your connection and try again.
           </p>
         )}
-        <button className="btn ob-reveal__cta" onClick={onConfirm} disabled={saving || overcommitted}>
+        <Button
+          className="w-full bg-[var(--ph-accent)] font-extrabold text-[var(--ph-bg)] hover:bg-[var(--ph-text)]"
+          onClick={onConfirm}
+          disabled={saving || overcommitted}
+        >
           Looks good, let's go
-        </button>
-        <button className="link-btn ob-reveal__adjust" onClick={() => onEdit(2)}>
+        </Button>
+        <Button
+          variant="muted"
+          size="inline"
+          className="justify-self-center text-[13px] text-[var(--ph-muted)]"
+          onClick={() => onEdit(2)}
+        >
           Adjust the plan
-        </button>
+        </Button>
         <div className="ob-reveal__tagline">{REVEAL_TAGLINE}</div>
       </div>
     </div>

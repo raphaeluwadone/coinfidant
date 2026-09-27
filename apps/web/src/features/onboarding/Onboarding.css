@@ -57,17 +57,6 @@
   gap: 10px;
   margin-bottom: 22px;
 }
-.ob-back {
-  width: 30px;
-  height: 30px;
-  flex-shrink: 0;
-  border: 0;
-  border-radius: 50%;
-  background: var(--surface-2);
-  color: var(--text-muted);
-  font-weight: 800;
-  cursor: pointer;
-}
 .ob-rail {
   flex: 1;
   height: 6px;
@@ -123,13 +112,6 @@
   color: var(--text-muted);
 }
 
-.ob-card {
-  background: var(--surface);
-  border-radius: 12px;
-  padding: 12px 14px;
-  box-shadow: 0 0 8px rgba(0, 0, 0, 0.05);
-}
-
 .ob-reaction {
   margin: 4px 0 0;
   padding: 12px 14px;
@@ -147,18 +129,9 @@
   gap: 10px;
   margin-top: 16px;
 }
-.ob-continue {
-  width: 100%;
-  font-weight: 800;
-}
 .ob[data-scheme="dark"] .ob-continue {
   background: #818cf8;
   color: #17161a;
-}
-.ob-skip {
-  justify-self: center;
-  font-size: 12px;
-  color: var(--text-muted);
 }
 
 /* Inputs */
@@ -176,14 +149,6 @@
 .ob-money.is-dim {
   opacity: 0.45;
 }
-.ob .money-input:not(.ob-money),
-.ob .text-input,
-.ob .select {
-  background: var(--surface);
-}
-.ob-select {
-  width: 100%;
-}
 .ob-inline {
   display: flex;
   align-items: center;
@@ -193,85 +158,11 @@
   font-weight: 600;
   color: var(--text-soft);
 }
-.ob-inline .text-input {
-  height: 40px;
-}
-
-.ob-chips {
-  display: flex;
-  gap: 8px;
-}
-.ob-chips--wrap,
-.ob-form .ob-chips {
-  flex-wrap: wrap;
-}
-.ob-chip {
-  padding: 9px 14px;
-  border: 0;
-  border-radius: var(--radius-pill);
-  background: var(--surface);
-  color: var(--text-soft);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition:
-    background 0.15s var(--ease),
-    color 0.15s var(--ease);
-}
-.ob-chip--grow {
-  flex: 1;
-  padding: 10px;
-}
-.ob-chip--emoji {
-  padding: 8px 10px;
-  font-size: 18px;
-}
-.ob-chip.is-on {
-  background: var(--accent-text);
-  color: #fff;
-  font-weight: 700;
-}
-
-.ob-seg {
-  display: flex;
-  gap: 4px;
-  padding: 4px;
-  border-radius: 12px;
-  background: var(--surface-2);
-}
-.ob-seg button {
-  flex: 1;
-  padding: 8px 6px;
-  border: 0;
-  border-radius: 9px;
-  background: none;
-  color: var(--text-soft);
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-}
-.ob-seg button.is-on {
-  background: var(--surface);
-  color: var(--accent-text);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-}
 
 .ob-pair {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
-}
-
-.ob-check {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-soft);
-}
-.ob-check input {
-  accent-color: var(--accent);
 }
 
 /* Lists */
@@ -293,32 +184,6 @@
 .ob-row__name {
   flex: 1;
   min-width: 0;
-}
-.ob-remove {
-  width: 24px;
-  height: 24px;
-  flex-shrink: 0;
-  border: 0;
-  border-radius: 50%;
-  background: var(--surface-2);
-  color: var(--text-muted);
-  font-size: 11px;
-  font-weight: 700;
-  cursor: pointer;
-}
-.ob-add {
-  padding: 12px 14px;
-  border: 2px dashed var(--border);
-  border-radius: 12px;
-  background: none;
-  color: var(--text-muted);
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-}
-.ob-add:hover {
-  border-color: var(--accent-text);
-  color: var(--accent-text);
 }
 .ob-form {
   display: grid;
@@ -421,30 +286,6 @@
   color: var(--accent-text);
 }
 
-.ob-noidea {
-  display: grid;
-  gap: 4px;
-  padding: 16px;
-  border: 2px solid var(--accent);
-  border-radius: 14px;
-  background: none;
-  text-align: center;
-  cursor: pointer;
-}
-.ob-noidea strong {
-  font-size: 15px;
-  font-weight: 800;
-  color: var(--accent-text);
-}
-.ob-noidea span {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-soft);
-}
-.ob-noidea.is-on {
-  background: var(--accent-tint);
-}
-
 .ob-paydaymode {
   display: grid;
   gap: 4px;
@@ -455,32 +296,6 @@
 }
 
 /* Step 9 options */
-.ob-option {
-  display: grid;
-  gap: 2px;
-  padding: 14px;
-  border: 2px solid transparent;
-  border-radius: 12px;
-  background: var(--surface);
-  text-align: left;
-  cursor: pointer;
-}
-.ob-option strong {
-  font-size: 14px;
-  font-weight: 700;
-}
-.ob-option span {
-  font-size: 12px;
-  font-weight: 600;
-  color: light-dark(var(--text-muted), #b7b3ba);
-}
-.ob-option.is-on {
-  border-color: var(--accent-text);
-  background: var(--surface-2);
-}
-.ob-option--center {
-  text-align: center;
-}
 
 /* Step 1 */
 .ob-welcome {
@@ -512,37 +327,6 @@
   text-transform: none;
   letter-spacing: 0;
   font-size: 13px;
-}
-.ob-dial {
-  display: flex;
-  gap: 8px;
-  width: 100%;
-}
-.ob-dial__opt {
-  flex: 1;
-  display: grid;
-  gap: 4px;
-  padding: 12px 6px;
-  border: 0;
-  border-radius: 14px;
-  background: var(--surface);
-  color: var(--text-soft);
-  font-size: 11px;
-  font-weight: 700;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
-  cursor: pointer;
-  transition: transform 0.12s var(--ease);
-}
-.ob-dial__opt:active {
-  transform: scale(0.96);
-}
-.ob-dial__emoji {
-  font-size: 20px;
-}
-.ob-dial__opt.is-on {
-  background: var(--accent-text);
-  color: #fff;
-  box-shadow: 0 6px 16px rgba(79, 70, 229, 0.35);
 }
 .ob-preview {
   width: 100%;
@@ -692,20 +476,6 @@
   margin-top: auto;
   padding-top: 16px;
 }
-.ob-reveal__cta {
-  width: 100%;
-  background: var(--ph-accent);
-  color: var(--ph-bg);
-  font-weight: 800;
-}
-.ob-reveal__cta:hover {
-  background: var(--ph-text);
-}
-.ob-reveal__adjust {
-  justify-self: center;
-  color: var(--ph-muted);
-  font-size: 13px;
-}
 .ob-reveal__tagline {
   margin-top: 4px;
   text-align: center;
@@ -776,26 +546,6 @@
   .ob[data-phase] {
     background: #121214;
   }
-}
-
-.ob-row-actions {
-  display: flex;
-  flex-shrink: 0;
-  gap: 6px;
-}
-.ob-edit {
-  width: 24px;
-  height: 24px;
-  border: 0;
-  border-radius: 50%;
-  background: var(--surface-2);
-  color: var(--text-muted);
-  font-size: 12px;
-  cursor: pointer;
-}
-.ob-edit:hover,
-.ob-remove:hover {
-  color: var(--text);
 }
 
 .ob-answers {
