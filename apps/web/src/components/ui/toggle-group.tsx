@@ -25,7 +25,7 @@ const itemVariants = cva(
         segmented:
           "bg-transparent px-3 py-1.5 text-xs text-soft data-[state=on]:bg-card data-[state=on]:text-accent-foreground data-[state=on]:shadow-sm",
         chips:
-          "border border-border bg-card px-3.5 py-2 text-sm text-foreground data-[state=on]:border-primary data-[state=on]:bg-primary data-[state=on]:text-primary-foreground",
+          "shrink-0 bg-secondary px-3.5 py-[9px] text-[13px] font-semibold text-soft data-[state=on]:bg-primary data-[state=on]:font-bold data-[state=on]:text-primary-foreground",
       },
     },
     defaultVariants: { variant: "segmented" },

@@ -2,8 +2,10 @@ import { addDays, autoTag, formatMoney, type ISODate } from "@coinfidant/engine"
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useMemo, useRef, useState } from "react";
-import { BackButton } from "../../components/BackButton";
-import { useToast } from "../../components/Toasts";
+import { BackButton } from "@/components/BackButton";
+import { useToast } from "@/components/Toasts";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { todayQuery, type TodayData, type TxnRow } from "../../lib/today";
 import { deleteTransaction } from "../../lib/transactions";
 import "./Transactions.css";
@@ -54,9 +56,11 @@ export function Transactions() {
       <BackButton />
       <header className="txns__head">
         <h1>Transactions</h1>
-        <Link to="/settings" className="round-btn" aria-label="Settings">
-          ⚙️
-        </Link>
+        <Button asChild variant="surface" size="icon" className="size-[34px]">
+          <Link to="/settings" aria-label="Settings">
+            ⚙️
+          </Link>
+        </Button>
       </header>
 
       {visible.length === 0 && lastCycle.length === 0 ? (
@@ -120,44 +124,48 @@ function DayGroups({
             <h2 className="txns__dayhead">
               {dayLabel(day, today)} · {formatMoney(total, data.currency)}
             </h2>
-            <ul className="card txns__list">
-              {rows.map((t) => {
-                const tag = autoTag(
-                  tagged.find((x) => x.id === t.id)!,
-                  tagged,
-                  ctx,
-                );
-                return (
-                  <li key={t.id} className="txn">
-                    <span className="txn__emoji" aria-hidden="true">
-                      {t.category.emoji}
-                    </span>
-                    <div className="txn__main">
-                      <div className="txn__title">{t.category.name}</div>
-                      {t.note ? (
-                        <div className="txn__sub is-note">{t.note}</div>
-                      ) : (
-                        <div className="txn__sub">{tag}</div>
-                      )}
-                    </div>
-                    <div className="txn__side">
-                      <div className="txn__amount">
-                        {t.type === "refund" ? "+" : ""}
-                        {formatMoney(t.amount, data.currency)}
+            <Card asChild className="txns__list">
+              <ul>
+                {rows.map((t) => {
+                  const tag = autoTag(
+                    tagged.find((x) => x.id === t.id)!,
+                    tagged,
+                    ctx,
+                  );
+                  return (
+                    <li key={t.id} className="txn">
+                      <span className="txn__emoji" aria-hidden="true">
+                        {t.category.emoji}
+                      </span>
+                      <div className="txn__main">
+                        <div className="txn__title">{t.category.name}</div>
+                        {t.note ? (
+                          <div className="txn__sub is-note">{t.note}</div>
+                        ) : (
+                          <div className="txn__sub">{tag}</div>
+                        )}
                       </div>
-                      <div className="txn__time">{time.format(new Date(t.occurredAt)).replace(" ", "")}</div>
-                    </div>
-                    <button
-                      className="txn__delete"
-                      onClick={() => onDelete(t.id)}
-                      aria-label={`Delete ${t.category.name}`}
-                    >
-                      ✕
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
+                      <div className="txn__side">
+                        <div className="txn__amount">
+                          {t.type === "refund" ? "+" : ""}
+                          {formatMoney(t.amount, data.currency)}
+                        </div>
+                        <div className="txn__time">{time.format(new Date(t.occurredAt)).replace(" ", "")}</div>
+                      </div>
+                      <Button
+                        variant="soft"
+                        size="icon"
+                        className="size-7 text-xs text-muted-foreground opacity-60 hover:text-destructive hover:opacity-100 focus-visible:text-destructive focus-visible:opacity-100"
+                        onClick={() => onDelete(t.id)}
+                        aria-label={`Delete ${t.category.name}`}
+                      >
+                        ✕
+                      </Button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </Card>
           </section>
         );
       })}
@@ -187,17 +195,19 @@ function WeekByCategory({
 
   if (!rows.length) return null;
   return (
-    <aside className="card txns__week">
-      <h2>This week by category</h2>
-      <ul>
-        {rows.map((r) => (
-          <li key={r.label}>
-            <span>{r.label}</span>
-            <strong>{formatMoney(r.amount, currency)}</strong>
-          </li>
-        ))}
-      </ul>
-    </aside>
+    <Card asChild className="txns__week">
+      <aside>
+        <h2>This week by category</h2>
+        <ul>
+          {rows.map((r) => (
+            <li key={r.label}>
+              <span>{r.label}</span>
+              <strong>{formatMoney(r.amount, currency)}</strong>
+            </li>
+          ))}
+        </ul>
+      </aside>
+    </Card>
   );
 }
 
@@ -213,9 +223,9 @@ function Empty() {
         <br />
         Log something and break the silence.
       </p>
-      <Link to="/log" className="btn">
-        Log your first spend
-      </Link>
+      <Button asChild>
+        <Link to="/log">Log your first spend</Link>
+      </Button>
     </div>
   );
 }

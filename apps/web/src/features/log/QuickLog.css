@@ -19,17 +19,6 @@
   font-size: 16px;
   font-weight: 700;
 }
-.log__close {
-  width: 30px;
-  height: 30px;
-  border: 0;
-  border-radius: 50%;
-  background: var(--surface-2);
-  color: var(--text-muted);
-  font-size: 15px;
-  font-weight: 700;
-  cursor: pointer;
-}
 
 .log__amount {
   padding: 18px 0 14px;
@@ -63,42 +52,6 @@
 }
 .log__presets {
   margin-bottom: 16px;
-}
-
-.cat-chip {
-  flex-shrink: 0;
-  padding: 9px 14px;
-  border: 0;
-  border-radius: var(--radius-pill);
-  background: var(--surface-2);
-  color: var(--text-soft);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition:
-    background 0.15s var(--ease),
-    color 0.15s var(--ease);
-}
-.cat-chip.is-on {
-  background: var(--accent-text);
-  color: var(--fab-text);
-  font-weight: 700;
-}
-
-.preset {
-  flex-shrink: 0;
-  padding: 8px 12px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: none;
-  color: var(--text-soft);
-  font-size: 12px;
-  font-weight: 600;
-  white-space: nowrap;
-  cursor: pointer;
-}
-.preset:hover {
-  border-color: var(--accent-text);
 }
 
 .keypad {
@@ -174,10 +127,6 @@
   border-radius: 14px;
   animation: fade-up 0.5s var(--ease) 0.2s both;
 }
-.log__result .label {
-  font-size: 12px;
-  font-weight: 600;
-}
 .log__left {
   display: inline-block;
   margin-top: 4px;
@@ -201,10 +150,6 @@
   height: 50px;
   font-size: 15px;
   font-weight: 800;
-}
-.log__undo {
-  justify-self: center;
-  color: var(--text-muted);
 }
 
 @keyframes pop {
@@ -254,17 +199,4 @@
   display: flex;
   justify-content: center;
   margin: -6px 0 14px;
-}
-.log__date-chip {
-  padding: 6px 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-pill);
-  background: none;
-  color: var(--text-soft);
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-}
-.log__date {
-  height: 36px;
 }

@@ -2,9 +2,13 @@ import { autoTag, formatMoney, reactionFor, type Tone } from "@coinfidant/engine
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Mascot } from "../../components/Mascot";
-import { todayQuery, type TodayData, type TxnRow } from "../../lib/today";
-import { deleteTransaction, logTransaction } from "../../lib/transactions";
+import { Mascot } from "@/components/Mascot";
+import { Button } from "@/components/ui/button";
+import { Card, Eyebrow } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { todayQuery, type TodayData, type TxnRow } from "@/lib/today";
+import { deleteTransaction, logTransaction } from "@/lib/transactions";
 import { fromMinorUnits, type Key, press, toMinorUnits } from "./amount";
 import "./QuickLog.css";
 
@@ -86,9 +90,9 @@ export function QuickLog() {
     <main className="log">
       <header className="log__head">
         <h1>Log a spend</h1>
-        <button className="log__close" onClick={close} aria-label="Close">
+        <Button variant="soft" size="icon" className="size-[30px] text-[15px]" onClick={close} aria-label="Close">
           ✕
-        </button>
+        </Button>
       </header>
 
       <div
@@ -102,8 +106,8 @@ export function QuickLog() {
 
       <div className="log__when">
         {pickingDate && today && earliest ? (
-          <input
-            className="text-input log__date"
+          <Input
+            className="h-9 w-auto"
             type="date"
             min={earliest}
             max={today}
@@ -114,32 +118,40 @@ export function QuickLog() {
             autoFocus
           />
         ) : (
-          <button type="button" className="log__date-chip" onClick={() => setPickingDate(true)}>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-auto px-3 py-1.5 text-xs text-soft"
+            onClick={() => setPickingDate(true)}
+          >
             📅 {!date || date === today ? "Today" : dayName(date)}
-          </button>
+          </Button>
         )}
       </div>
 
-      <div className="log__chips" role="radiogroup" aria-label="Category">
+      <ToggleGroup
+        type="single"
+        variant="chips"
+        value={category ?? ""}
+        onValueChange={(v) => v && setCategory(v)}
+        aria-label="Category"
+        className="log__chips flex-nowrap"
+      >
         {categories.map((c) => (
-          <button
-            key={c.id}
-            role="radio"
-            aria-checked={category === c.id}
-            className={`cat-chip ${category === c.id ? "is-on" : ""}`}
-            onClick={() => setCategory(c.id)}
-          >
+          <ToggleGroupItem key={c.id} value={c.id}>
             {c.emoji} {c.name}
-          </button>
+          </ToggleGroupItem>
         ))}
-      </div>
+      </ToggleGroup>
 
       {presets.length > 0 && (
         <div className="log__presets">
           {presets.map((p) => (
-            <button
+            <Button
               key={`${p.categoryId}|${p.amount}|${p.note ?? ""}`}
-              className="preset"
+              variant="outline"
+              size="sm"
+              className="h-auto rounded-field px-3 py-2 text-xs font-semibold text-soft hover:border-accent-foreground hover:bg-transparent"
               onClick={() => {
                 setValue(fromMinorUnits(p.amount));
                 setCategory(p.categoryId);
@@ -147,7 +159,7 @@ export function QuickLog() {
               }}
             >
               {p.emoji} {p.note ?? p.name} · {formatMoney(p.amount, currency)}
-            </button>
+            </Button>
           ))}
         </div>
       )}
@@ -170,9 +182,9 @@ export function QuickLog() {
           That didn't save. Check your connection and try again.
         </p>
       )}
-      <button className="btn log__save" disabled={amount <= 0 || save.isPending} onClick={submit}>
+      <Button className="log__save" disabled={amount <= 0 || save.isPending} onClick={submit}>
         {amount > 0 ? `Save ${formatMoney(amount, currency, { showMinor: amount % 100 !== 0 })}` : "Enter an amount"}
-      </button>
+      </Button>
     </main>
   );
 }
@@ -217,17 +229,17 @@ function Confirmation({
       <p className="log__reaction">
         {reactionFor(spend?.category ?? "other", tone, s.today.spendToday < 0, { stakes: today.stakes })}
       </p>
-      <div className="card log__result">
-        <div className="label">Left today</div>
+      <Card className="log__result">
+        <Eyebrow className="font-semibold">Left today</Eyebrow>
         <div className="log__left">{formatMoney(Math.max(0, s.today.spendToday), today.currency)}</div>
         {tag && <span className="log__tag">{tag}</span>}
-      </div>
-      <button className="btn log__back" onClick={onDone} autoFocus>
+      </Card>
+      <Button className="log__back" onClick={onDone} autoFocus>
         Back to Today
-      </button>
-      <button className="link-btn log__undo" onClick={onUndo} disabled={undoing}>
+      </Button>
+      <Button variant="muted" size="inline" className="justify-self-center" onClick={onUndo} disabled={undoing}>
         Undo
-      </button>
+      </Button>
     </main>
   );
 }
