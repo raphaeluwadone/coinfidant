@@ -1,0 +1,41 @@
+/*
+ * Tailwind for shadcn/ui components. Preflight (Tailwind's reset) is left out until every screen has moved over,
+ * so existing hand-written CSS renders unchanged. Layered rules lose to unlayered ones, so old CSS still wins where
+ * the two overlap.
+ */
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+@import "tw-animate-css";
+
+/* shadcn's colour names, pointed at our tokens so phase re-skins and the theme switch apply to every component. */
+@theme inline {
+  --color-background: var(--bg);
+  --color-foreground: var(--text);
+  --color-card: var(--surface);
+  --color-card-foreground: var(--text);
+  --color-popover: var(--surface);
+  --color-popover-foreground: var(--text);
+  --color-primary: var(--accent);
+  --color-primary-hover: var(--accent-hover);
+  --color-primary-foreground: #ffffff;
+  --color-secondary: var(--surface-2);
+  --color-secondary-foreground: var(--text);
+  --color-muted: var(--surface-2);
+  --color-muted-foreground: var(--text-muted);
+  --color-soft: var(--text-soft);
+  --color-accent: var(--accent-tint);
+  --color-accent-foreground: var(--accent-text);
+  --color-destructive: var(--danger);
+  --color-success: var(--success);
+  --color-warn: var(--warn);
+  --color-border: var(--border);
+  --color-input: var(--border);
+  --color-ring: var(--accent);
+
+  /* Named apart from our tokens: `--radius-card: var(--radius-card)` would point at itself. */
+  --radius-tile: var(--radius-card);
+  --radius-field: 12px;
+  --shadow-tile: var(--shadow-card);
+  --font-sans: var(--font);
+}

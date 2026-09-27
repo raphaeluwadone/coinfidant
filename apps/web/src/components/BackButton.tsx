@@ -1,4 +1,6 @@
 import { useCanGoBack, useNavigate, useRouter } from "@tanstack/react-router";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 type Fallback = "/" | "/history" | "/settings";
 
@@ -8,13 +10,16 @@ export function BackButton({ fallback = "/", corner = false }: { fallback?: Fall
   const navigate = useNavigate();
   const canGoBack = useCanGoBack();
   return (
-    <button
-      type="button"
-      className={`back-btn ${corner ? "back-btn--corner" : ""}`}
+    <Button
+      size="icon"
       aria-label="Back"
+      className={cn(
+        "self-start justify-self-start font-extrabold",
+        corner && "absolute top-[calc(16px+env(safe-area-inset-top,0px))] left-4 z-[2]",
+      )}
       onClick={() => (canGoBack ? router.history.back() : navigate({ to: fallback }))}
     >
       ←
-    </button>
+    </Button>
   );
 }
