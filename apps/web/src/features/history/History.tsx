@@ -2,6 +2,7 @@ import { formatMoney, quipsFor, type Tone, todayMood, weekLine } from "@coinfida
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
+import { BackButton } from "../../components/BackButton";
 import { cycleMonth, type CycleSummary, historyQuery, rangeLabel, ratePercent } from "../../lib/cycles";
 import { todayQuery, type TodayData } from "../../lib/today";
 import "./History.css";
@@ -13,6 +14,7 @@ export function History() {
 
   return (
     <div className="history">
+      <BackButton />
       <h1>History</h1>
       <div className="history__tabs" role="tablist">
         <button

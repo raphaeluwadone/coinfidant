@@ -2,6 +2,7 @@ import { computeOpenCycle, cycleStartFor, formatMoney, hasEvent, localDate } fro
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useMemo, useState, type FormEvent } from "react";
+import { BackButton } from "../../components/BackButton";
 import { Mascot } from "../../components/Mascot";
 import { MoneyInput } from "../../components/MoneyInput";
 import { logout, meQuery } from "../../lib/auth";
@@ -81,6 +82,7 @@ export function SetupForm({ initial }: { initial: BudgetData | null }) {
 
   return (
     <main className="setup">
+      {initial && <BackButton fallback="/settings" />}
       <header className="setup__head">
         <Mascot size={56} />
         <h1>{initial ? "Your plan" : "Let's set up your plan"}</h1>

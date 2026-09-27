@@ -2,6 +2,7 @@ import { formatMoney, say } from "@coinfidant/engine";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
+import { BackButton } from "../../components/BackButton";
 import { paydayDue, todayQuery } from "../../lib/today";
 import type { Learned } from "../../lib/transactions";
 import "../payday/Flow.css";
@@ -48,6 +49,7 @@ export function DiscoveryProgress() {
   const category = (id: string) => data.categories.find((c) => c.id === id);
   return (
     <main className="flow">
+      <BackButton />
       <span className="flow__badge">
         🔍 Discovery cycle · Day {p.day} of {p.days}
       </span>

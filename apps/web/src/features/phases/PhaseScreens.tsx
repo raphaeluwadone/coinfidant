@@ -2,10 +2,11 @@ import { attackOrder, daysBetween, formatMoney, type Phase, PHASES, say } from "
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useMemo } from "react";
+import { BackButton } from "../../components/BackButton";
 import { api } from "../../lib/api";
 import { budgetQuery } from "../../lib/budget";
 import { creditorEmoji } from "../../lib/emoji";
-import { todayQuery, type TodayData } from "../../lib/today";
+import { postponeSweep, todayQuery, type TodayData } from "../../lib/today";
 import { hpPercent } from "./PhaseParts";
 import "./Phases.css";
 
@@ -24,6 +25,7 @@ export function DebtBoard() {
 
   return (
     <div className="board">
+      <BackButton />
       <div>
         <h1>Debt board ⚔️</h1>
         <p className="board__sub">Most expensive dies first.{extra > 0 && ` Extra ${money(extra)}/cycle.`}</p>
@@ -112,6 +114,7 @@ export function FundDetail({ id }: { id: string }) {
 
   return (
     <div className="fund">
+      <BackButton />
       <h1>🪣 {fund.name} fund</h1>
       <div
         className="fund__pot"
@@ -194,6 +197,15 @@ export function SweepOffer() {
         </button>
       </div>
       {choose.isError && <p role="alert">That didn't go through. Try again?</p>}
+      <button
+        className="link-btn sweep__later"
+        onClick={() => {
+          postponeSweep(data);
+          navigate({ to: "/" });
+        }}
+      >
+        Decide later
+      </button>
     </div>
   );
 }
@@ -261,6 +273,14 @@ export function PhaseUp() {
       </section>
       <button className="btn" disabled={done.isPending} onClick={() => done.mutate()}>
         Let's go {to.emoji}
+      </button>
+      <button
+        className="back-btn back-btn--corner phaseup__close"
+        aria-label="Close"
+        disabled={done.isPending}
+        onClick={() => done.mutate()}
+      >
+        ✕
       </button>
     </div>
   );

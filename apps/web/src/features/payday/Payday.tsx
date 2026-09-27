@@ -107,6 +107,9 @@ export function Payday() {
     const total = rows.reduce((a, r) => a + r.amount, 0);
     return (
       <main className="flow">
+        <button type="button" className="back-btn" aria-label="Back" onClick={() => setStep(1)}>
+          ←
+        </button>
         <h1 className="flow__title">Feeding the responsibilities</h1>
         <p className="flow__sub">One by one, before anything else touches this money.</p>
         <ul className="feed">
@@ -156,6 +159,9 @@ export function Payday() {
 
   return (
     <main className="flow flow--center">
+      <button type="button" className="back-btn back-btn--corner" aria-label="Back" onClick={() => setStep(2)}>
+        ←
+      </button>
       <div className="flow__emoji is-pop" aria-hidden="true">
         🎉
       </div>

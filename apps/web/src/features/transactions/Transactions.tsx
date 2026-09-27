@@ -2,6 +2,7 @@ import { addDays, autoTag, formatMoney, type ISODate } from "@coinfidant/engine"
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useMemo, useRef, useState } from "react";
+import { BackButton } from "../../components/BackButton";
 import { useToast } from "../../components/Toasts";
 import { todayQuery, type TodayData, type TxnRow } from "../../lib/today";
 import { deleteTransaction } from "../../lib/transactions";
@@ -50,6 +51,7 @@ export function Transactions() {
 
   return (
     <div className="txns">
+      <BackButton />
       <header className="txns__head">
         <h1>Transactions</h1>
         <Link to="/settings" className="round-btn" aria-label="Settings">

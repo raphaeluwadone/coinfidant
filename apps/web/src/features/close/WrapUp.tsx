@@ -1,6 +1,7 @@
 import { formatMoney } from "@coinfidant/engine";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
+import { BackButton } from "../../components/BackButton";
 import { cycleQuery, rangeLabel, ratePercent } from "../../lib/cycles";
 import { paydayDue, todayQuery } from "../../lib/today";
 import type { Learned } from "../../lib/transactions";
@@ -17,7 +18,13 @@ export function WrapUp({ id, flow }: { id: string; flow: boolean }) {
   const { data: today } = useQuery(todayQuery);
   const currency = today?.currency ?? "NGN";
 
-  if (isError) return <main className="flow flow--center">That cycle isn't here.</main>;
+  if (isError)
+    return (
+      <main className="flow flow--center">
+        <BackButton fallback="/history" corner />
+        That cycle isn't here.
+      </main>
+    );
   if (!c) return <main className="flow" aria-busy="true" />;
   const s = c.snapshot;
 
@@ -32,6 +39,7 @@ export function WrapUp({ id, flow }: { id: string; flow: boolean }) {
 
   return (
     <main className="flow wrap">
+      {!flow && <BackButton fallback="/history" />}
       <div className="wrap__range">{rangeLabel(c.startDate, c.endDate).toUpperCase()} CYCLE</div>
       <h1 className="flow__title">Cycle wrap-up</h1>
 

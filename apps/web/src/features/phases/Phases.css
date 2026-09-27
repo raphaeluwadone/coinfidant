@@ -371,6 +371,14 @@
   font-size: 40px;
   font-weight: 800;
 }
+.sweep__later {
+  justify-self: center;
+  color: var(--text-muted);
+}
+.phaseup__close {
+  left: auto;
+  right: 16px;
+}
 .sweep__options {
   display: grid;
   grid-template-columns: 1fr 1fr;

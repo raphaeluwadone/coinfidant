@@ -1,5 +1,6 @@
 /* Full-screen interstitials: Payday mode and the discovery cycle. They follow the app theme. */
 .flow {
+  position: relative;
   display: flex;
   flex-direction: column;
   min-height: 100dvh;

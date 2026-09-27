@@ -63,6 +63,29 @@ export const voiceOf = (d: Pick<TodayData, "prefs" | "stakes">) => ({
 /** The Payday flow is owed when Payday mode is on and this cycle hasn't shown it yet. */
 export const paydayDue = (d: TodayData) => !!d.budget.paydayMode && !!d.cycle && !d.cycle.paydaySeenAt;
 
+const SWEEP_LATER_KEY = "cf.sweep.later";
+const sweepId = (d: TodayData) => (d.cycle && d.sweepOffer ? `${d.cycle.id}:${d.sweepOffer.week}` : null);
+
+/** "Decide later" on the sweep screen: Today stops redirecting to it for the rest of this browser session. */
+export function postponeSweep(d: TodayData) {
+  try {
+    const id = sweepId(d);
+    if (id) sessionStorage.setItem(SWEEP_LATER_KEY, id);
+  } catch {
+    // Storage blocked: the offer just comes back next time.
+  }
+}
+
+/** Whether the sweep screen is owed: an offer exists, it's not discovery, and it hasn't been put off. */
+export function sweepDue(d: TodayData) {
+  if (!d.sweepOffer || d.budget.discovery) return false;
+  try {
+    return sessionStorage.getItem(SWEEP_LATER_KEY) !== sweepId(d);
+  } catch {
+    return true;
+  }
+}
+
 const SEEN_KEY = "cf.insights.seen";
 const localDay = () => new Date().toLocaleDateString("en-CA");
 
