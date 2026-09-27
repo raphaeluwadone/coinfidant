@@ -35,11 +35,19 @@ const Reaction = ({ children }: { children: ReactNode }) => (
 
 const Label = ({ children }: { children: ReactNode }) => <div className="ob-label">{children}</div>;
 
-const Remove = ({ onClick, what }: { onClick: () => void; what: string }) => (
-  <button type="button" className="ob-remove" onClick={onClick} aria-label={`Remove ${what}`}>
-    ✕
-  </button>
+const RowActions = ({ onEdit, onRemove, what }: { onEdit: () => void; onRemove: () => void; what: string }) => (
+  <span className="ob-row-actions">
+    <button type="button" className="ob-edit" onClick={onEdit} aria-label={`Edit ${what}`}>
+      ✎
+    </button>
+    <button type="button" className="ob-remove" onClick={onRemove} aria-label={`Remove ${what}`}>
+      ✕
+    </button>
+  </span>
 );
+
+/** An item's form opened in place of its row, prefilled, saving back to the same slot. */
+const EditCard = ({ children }: { children: ReactNode }) => <div className="ob-card ob-form">{children}</div>;
 
 function Adder({ label, children }: { label: string; children: (close: () => void) => ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -53,6 +61,9 @@ function Adder({ label, children }: { label: string; children: (close: () => voi
 }
 
 const without = <T,>(list: T[], i: number) => list.filter((_, k) => k !== i);
+const replaceAt = <T,>(list: T[], i: number, item: T) => list.map((x, k) => (k === i ? item : x));
+
+type FormProps<T> = { initial?: T; onAdd: (item: T) => void; onCancel: () => void };
 
 // Step 1
 export function Welcome({ a, set }: StepProps) {
@@ -157,20 +168,35 @@ export function Payday({ a, set, today }: StepProps) {
 
 // Step 3
 export function Bills({ a, set }: StepProps) {
+  const [editing, setEditing] = useState<number | null>(null);
   const total = a.bills.reduce((s, b) => s + b.amount, 0);
   const pct = a.salary ? (total / a.salary) * 100 : 0;
   return (
     <>
       <Head title="What bills hit every month? 🧾" />
       <div className="ob-list">
-        {a.bills.map((b, i) => (
-          <div key={i} className="ob-card ob-row">
-            <span className="ob-row__emoji">{billEmoji(b.name)}</span>
-            <span className="ob-row__name">{b.name}</span>
-            <span className="ob-row__amount">{formatMoney(b.amount)}</span>
-            <Remove onClick={() => set({ bills: without(a.bills, i) })} what={b.name} />
-          </div>
-        ))}
+        {a.bills.map((b, i) =>
+          editing === i ? (
+            <EditCard key={i}>
+              <BillForm
+                initial={b}
+                onAdd={(v) => (set({ bills: replaceAt(a.bills, i, v) }), setEditing(null))}
+                onCancel={() => setEditing(null)}
+              />
+            </EditCard>
+          ) : (
+            <div key={i} className="ob-card ob-row">
+              <span className="ob-row__emoji">{billEmoji(b.name)}</span>
+              <span className="ob-row__name">{b.name}</span>
+              <span className="ob-row__amount">{formatMoney(b.amount)}</span>
+              <RowActions
+                onEdit={() => setEditing(i)}
+                onRemove={() => (set({ bills: without(a.bills, i) }), setEditing(null))}
+                what={b.name}
+              />
+            </div>
+          ),
+        )}
         <Adder label="Add a bill">
           {(close) => <BillForm onAdd={(b) => (set({ bills: [...a.bills, b] }), close())} onCancel={close} />}
         </Adder>
@@ -186,9 +212,9 @@ export function Bills({ a, set }: StepProps) {
   );
 }
 
-function BillForm({ onAdd, onCancel }: { onAdd: (b: Answers["bills"][number]) => void; onCancel: () => void }) {
-  const [name, setName] = useState("");
-  const [amount, setAmount] = useState(0);
+function BillForm({ initial, onAdd, onCancel }: FormProps<Answers["bills"][number]>) {
+  const [name, setName] = useState(initial?.name ?? "");
+  const [amount, setAmount] = useState(initial?.amount ?? 0);
   return (
     <>
       <input
@@ -204,19 +230,30 @@ function BillForm({ onAdd, onCancel }: { onAdd: (b: Answers["bills"][number]) =>
         disabled={!name.trim() || amount <= 0}
         onAdd={() => onAdd({ name: name.trim(), amount })}
         onCancel={onCancel}
+        editing={!!initial}
       />
     </>
   );
 }
 
-function FormActions({ disabled, onAdd, onCancel }: { disabled: boolean; onAdd: () => void; onCancel: () => void }) {
+function FormActions({
+  disabled,
+  onAdd,
+  onCancel,
+  editing = false,
+}: {
+  disabled: boolean;
+  onAdd: () => void;
+  onCancel: () => void;
+  editing?: boolean;
+}) {
   return (
     <div className="ob-form__actions">
       <button type="button" className="link-btn ob-form__cancel" onClick={onCancel}>
         Cancel
       </button>
       <button type="button" className="btn ob-form__add" disabled={disabled} onClick={onAdd}>
-        Add
+        {editing ? "Save" : "Add"}
       </button>
     </div>
   );
@@ -231,6 +268,7 @@ const monthLabel = (iso: ISODate, today: ISODate) => {
 };
 
 export function BigBills({ a, set, today }: StepProps) {
+  const [editing, setEditing] = useState<number | null>(null);
   const start = salaryDate(a, today);
   return (
     <>
@@ -239,27 +277,42 @@ export function BigBills({ a, set, today }: StepProps) {
         sub="Rent, school fees, annual subscriptions. Anything that isn't monthly."
       />
       <div className="ob-list">
-        {a.sinkingFunds.map((f, i) => (
-          <div key={i} className="ob-card ob-fund">
-            <div className="ob-fund__top">
-              <strong>🏠 {f.name}</strong>
-              <strong>{formatMoney(f.target)}</strong>
-              <Remove onClick={() => set({ sinkingFunds: without(a.sinkingFunds, i) })} what={f.name} />
+        {a.sinkingFunds.map((f, i) =>
+          editing === i ? (
+            <EditCard key={i}>
+              <FundForm
+                today={today}
+                initial={f}
+                onAdd={(v) => (set({ sinkingFunds: replaceAt(a.sinkingFunds, i, v) }), setEditing(null))}
+                onCancel={() => setEditing(null)}
+              />
+            </EditCard>
+          ) : (
+            <div key={i} className="ob-card ob-fund">
+              <div className="ob-fund__top">
+                <strong>🏠 {f.name}</strong>
+                <strong>{formatMoney(f.target)}</strong>
+                <RowActions
+                  onEdit={() => setEditing(i)}
+                  onRemove={() => (set({ sinkingFunds: without(a.sinkingFunds, i) }), setEditing(null))}
+                  what={f.name}
+                />
+              </div>
+              <div className="ob-muted">Due {monthLabel(f.dueDate, today)}</div>
+              <div className="ob-setaside">
+                We'll set aside{" "}
+                {formatMoney(
+                  sinkingSetAside(
+                    { id: "", name: f.name, target: f.target, saved: 0, due: f.dueDate },
+                    start,
+                    a.expectedPayday,
+                  ),
+                )}
+                /month for this →
+              </div>
             </div>
-            <div className="ob-muted">Due {monthLabel(f.dueDate, today)}</div>
-            <div className="ob-setaside">
-              We'll set aside{" "}
-              {formatMoney(
-                sinkingSetAside(
-                  { id: "", name: f.name, target: f.target, saved: 0, due: f.dueDate },
-                  start,
-                  a.expectedPayday,
-                ),
-              )}
-              /month for this →
-            </div>
-          </div>
-        ))}
+          ),
+        )}
         <Adder label="Add another big bill">
           {(close) => (
             <FundForm
@@ -277,16 +330,13 @@ export function BigBills({ a, set, today }: StepProps) {
 
 function FundForm({
   today,
+  initial,
   onAdd,
   onCancel,
-}: {
-  today: ISODate;
-  onAdd: (f: Answers["sinkingFunds"][number]) => void;
-  onCancel: () => void;
-}) {
-  const [name, setName] = useState("");
-  const [target, setTarget] = useState(0);
-  const [month, setMonth] = useState("");
+}: FormProps<Answers["sinkingFunds"][number]> & { today: ISODate }) {
+  const [name, setName] = useState(initial?.name ?? "");
+  const [target, setTarget] = useState(initial?.target ?? 0);
+  const [month, setMonth] = useState(initial?.dueDate.slice(0, 7) ?? "");
   return (
     <>
       <input
@@ -312,6 +362,7 @@ function FundForm({
         disabled={!name.trim() || target <= 0 || !month}
         onAdd={() => onAdd({ name: name.trim(), target, dueDate: `${month}-01` })}
         onCancel={onCancel}
+        editing={!!initial}
       />
     </>
   );
@@ -327,25 +378,40 @@ const planLabel = (d: DebtInput) => {
 
 export function Debts({ a, set }: StepProps) {
   const [bulk, setBulk] = useState(false);
+  const [editing, setEditing] = useState<number | null>(null);
   return (
     <>
       <Head title="Let's get honest ⚔️" sub="Every debt or obligation, no judgment here." />
       <div className="ob-list">
-        {a.debts.map((d, i) => (
-          <div key={i} className="ob-card ob-debt">
-            <div className="ob-debt__top">
-              <strong>
-                {creditorEmoji(d.creditor)} {d.name}
-              </strong>
-              <strong>{formatMoney(d.amountLeft)} left</strong>
-              <Remove onClick={() => set({ debts: without(a.debts, i) })} what={d.name} />
+        {a.debts.map((d, i) =>
+          editing === i ? (
+            <EditCard key={i}>
+              <DebtForm
+                initial={d}
+                onAdd={(v) => (set({ debts: replaceAt(a.debts, i, v) }), setEditing(null))}
+                onCancel={() => setEditing(null)}
+              />
+            </EditCard>
+          ) : (
+            <div key={i} className="ob-card ob-debt">
+              <div className="ob-debt__top">
+                <strong>
+                  {creditorEmoji(d.creditor)} {d.name}
+                </strong>
+                <strong>{formatMoney(d.amountLeft)} left</strong>
+                <RowActions
+                  onEdit={() => setEditing(i)}
+                  onRemove={() => (set({ debts: without(a.debts, i) }), setEditing(null))}
+                  what={d.name}
+                />
+              </div>
+              <div className="ob-muted">
+                {planLabel(d)}
+                {d.hasInterest ? " · interest or penalties" : ""}
+              </div>
             </div>
-            <div className="ob-muted">
-              {planLabel(d)}
-              {d.hasInterest ? " · interest or penalties" : ""}
-            </div>
-          </div>
-        ))}
+          ),
+        )}
         {bulk ? (
           <div className="ob-card ob-form">
             <BulkDebtForm
@@ -367,16 +433,17 @@ export function Debts({ a, set }: StepProps) {
   );
 }
 
-function DebtForm({ onAdd, onCancel }: { onAdd: (d: DebtInput) => void; onCancel: () => void }) {
-  const [creditor, setCreditor] = useState<string>(CREDITORS[0].label);
-  const [name, setName] = useState("");
-  const [left, setLeft] = useState(0);
-  const [kind, setKind] = useState<DebtInput["plan"]["kind"]>("installments");
-  const [perCycle, setPerCycle] = useState(0);
-  const [min, setMin] = useState(0);
-  const [ideal, setIdeal] = useState(0);
-  const [due, setDue] = useState("");
-  const [interest, setInterest] = useState(false);
+function DebtForm({ initial, onAdd, onCancel }: FormProps<DebtInput>) {
+  const p = initial?.plan;
+  const [creditor, setCreditor] = useState<string>(initial?.creditor ?? CREDITORS[0].label);
+  const [name, setName] = useState(initial?.name ?? "");
+  const [left, setLeft] = useState(initial?.amountLeft ?? 0);
+  const [kind, setKind] = useState<DebtInput["plan"]["kind"]>(p?.kind ?? "installments");
+  const [perCycle, setPerCycle] = useState(p?.kind === "installments" ? p.perCycle : 0);
+  const [min, setMin] = useState(p?.kind === "flexible" ? p.min : 0);
+  const [ideal, setIdeal] = useState(p?.kind === "flexible" ? p.ideal : 0);
+  const [due, setDue] = useState(p?.kind === "oneOff" ? p.due : "");
+  const [interest, setInterest] = useState(initial?.hasInterest ?? false);
 
   const plan: DebtInput["plan"] | null =
     kind === "installments"
@@ -461,6 +528,7 @@ function DebtForm({ onAdd, onCancel }: { onAdd: (d: DebtInput) => void; onCancel
         disabled={!name.trim() || left <= 0 || !plan}
         onAdd={() => plan && onAdd({ name: name.trim(), creditor, amountLeft: left, hasInterest: interest, plan })}
         onCancel={onCancel}
+        editing={!!initial}
       />
     </>
   );
@@ -508,39 +576,71 @@ function BulkDebtForm({ onAdd, onCancel }: { onAdd: (d: DebtInput[]) => void; on
 const GOAL_EMOJI = ["✈️", "💻", "🏠", "🚗", "🎓", "💍", "🎯"];
 
 export function Goals({ a, set }: StepProps) {
+  const [editing, setEditing] = useState<string | null>(null);
+  const done = () => setEditing(null);
   return (
     <>
       <Head title="What are you working toward? 🎯" />
       <div className="ob-list">
-        {a.goals.map((g, i) => (
-          <div key={`g${i}`} className="ob-card ob-goal">
-            <div className="ob-debt__top">
-              <strong>
-                {g.emoji} {g.name}
-              </strong>
-              <Remove onClick={() => set({ goals: without(a.goals, i) })} what={g.name} />
-            </div>
-            <div className="ob-muted">Target {formatMoney(g.target)}</div>
-          </div>
-        ))}
-        {a.commitments.map((c, i) => (
-          <div key={`c${i}`} className="ob-card ob-goal">
-            <div className="ob-debt__top">
-              <strong>👤 {c.name}</strong>
-              <Remove onClick={() => set({ commitments: without(a.commitments, i) })} what={c.name} />
-            </div>
-            <div className="ob-minideal">
-              <div>
-                <span>MIN</span>
-                {formatMoney(c.min)}
+        {a.goals.map((g, i) =>
+          editing === `g${i}` ? (
+            <EditCard key={`g${i}`}>
+              <GoalForm
+                initial={{ kind: "goal", goal: g }}
+                onGoal={(v) => (set({ goals: replaceAt(a.goals, i, v) }), done())}
+                onPerson={() => {}}
+                onCancel={done}
+              />
+            </EditCard>
+          ) : (
+            <div key={`g${i}`} className="ob-card ob-goal">
+              <div className="ob-debt__top">
+                <strong>
+                  {g.emoji} {g.name}
+                </strong>
+                <RowActions
+                  onEdit={() => setEditing(`g${i}`)}
+                  onRemove={() => (set({ goals: without(a.goals, i) }), done())}
+                  what={g.name}
+                />
               </div>
-              <div className="is-ideal">
-                <span>IDEAL</span>
-                {formatMoney(c.ideal)}
+              <div className="ob-muted">Target {formatMoney(g.target)}</div>
+            </div>
+          ),
+        )}
+        {a.commitments.map((c, i) =>
+          editing === `c${i}` ? (
+            <EditCard key={`c${i}`}>
+              <GoalForm
+                initial={{ kind: "person", person: c }}
+                onGoal={() => {}}
+                onPerson={(v) => (set({ commitments: replaceAt(a.commitments, i, v) }), done())}
+                onCancel={done}
+              />
+            </EditCard>
+          ) : (
+            <div key={`c${i}`} className="ob-card ob-goal">
+              <div className="ob-debt__top">
+                <strong>👤 {c.name}</strong>
+                <RowActions
+                  onEdit={() => setEditing(`c${i}`)}
+                  onRemove={() => (set({ commitments: without(a.commitments, i) }), done())}
+                  what={c.name}
+                />
+              </div>
+              <div className="ob-minideal">
+                <div>
+                  <span>MIN</span>
+                  {formatMoney(c.min)}
+                </div>
+                <div className="is-ideal">
+                  <span>IDEAL</span>
+                  {formatMoney(c.ideal)}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          ),
+        )}
         <Adder label="Add a goal or person">
           {(close) => (
             <GoalForm
@@ -556,43 +656,52 @@ export function Goals({ a, set }: StepProps) {
   );
 }
 
+type GoalInitial =
+  { kind: "goal"; goal: Answers["goals"][number] } | { kind: "person"; person: Answers["commitments"][number] };
+
 function GoalForm({
+  initial,
   onGoal,
   onPerson,
   onCancel,
 }: {
+  initial?: GoalInitial;
   onGoal: (g: Answers["goals"][number]) => void;
   onPerson: (p: Answers["commitments"][number]) => void;
   onCancel: () => void;
 }) {
-  const [kind, setKind] = useState<"goal" | "person">("goal");
-  const [name, setName] = useState("");
-  const [emoji, setEmoji] = useState(GOAL_EMOJI[0]!);
-  const [target, setTarget] = useState(0);
-  const [min, setMin] = useState(0);
-  const [ideal, setIdeal] = useState(0);
+  const goal = initial?.kind === "goal" ? initial.goal : undefined;
+  const person = initial?.kind === "person" ? initial.person : undefined;
+  const [kind, setKind] = useState<"goal" | "person">(initial?.kind ?? "goal");
+  const [name, setName] = useState(goal?.name ?? person?.name ?? "");
+  const [emoji, setEmoji] = useState(goal?.emoji ?? GOAL_EMOJI[0]!);
+  const [target, setTarget] = useState(goal?.target ?? 0);
+  const [min, setMin] = useState(person?.min ?? 0);
+  const [ideal, setIdeal] = useState(person?.ideal ?? 0);
   return (
     <>
-      <div className="ob-seg" role="radiogroup" aria-label="What to add">
-        <button
-          type="button"
-          role="radio"
-          aria-checked={kind === "goal"}
-          className={kind === "goal" ? "is-on" : ""}
-          onClick={() => setKind("goal")}
-        >
-          🎯 A goal
-        </button>
-        <button
-          type="button"
-          role="radio"
-          aria-checked={kind === "person"}
-          className={kind === "person" ? "is-on" : ""}
-          onClick={() => setKind("person")}
-        >
-          👤 Someone I support
-        </button>
-      </div>
+      {!initial && (
+        <div className="ob-seg" role="radiogroup" aria-label="What to add">
+          <button
+            type="button"
+            role="radio"
+            aria-checked={kind === "goal"}
+            className={kind === "goal" ? "is-on" : ""}
+            onClick={() => setKind("goal")}
+          >
+            🎯 A goal
+          </button>
+          <button
+            type="button"
+            role="radio"
+            aria-checked={kind === "person"}
+            className={kind === "person" ? "is-on" : ""}
+            onClick={() => setKind("person")}
+          >
+            👤 Someone I support
+          </button>
+        </div>
+      )}
       {kind === "goal" && (
         <div className="ob-chips">
           {GOAL_EMOJI.map((e) => (
@@ -630,6 +739,7 @@ function GoalForm({
           kind === "goal" ? onGoal({ name: name.trim(), emoji, target }) : onPerson({ name: name.trim(), min, ideal })
         }
         onCancel={onCancel}
+        editing={!!initial}
       />
     </>
   );

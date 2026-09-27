@@ -44,6 +44,8 @@ export function Onboarding() {
   const today = useMemo(() => localDate(new Date(), TZ), []);
   const [a, set] = useReducer((s: Answers, patch: Partial<Answers>) => ({ ...s, ...patch }), initialAnswers);
   const [step, setStep] = useState(1);
+  // Set once the plan has been revealed: edits then jump straight back to it.
+  const [seenPlan, setSeenPlan] = useState(false);
   const { reading } = usePlanPreview(a, today);
 
   const save = useMutation({
@@ -57,7 +59,15 @@ export function Onboarding() {
 
   const current = STEPS[step - 1];
   const scheme = step === 9 ? "dark" : step === TOTAL ? "phase" : "light";
-  const next = () => setStep((s) => Math.min(TOTAL, s + 1));
+  const next = () => {
+    const to = seenPlan ? TOTAL : Math.min(TOTAL, step + 1);
+    if (to === TOTAL) setSeenPlan(true);
+    setStep(to);
+  };
+  const editStep = (n: number) => {
+    setSeenPlan(true);
+    setStep(n);
+  };
 
   const skip = () => {
     const cleared = Object.fromEntries((current?.skippable ?? []).map((k) => [k, initialAnswers[k]]));
@@ -68,6 +78,13 @@ export function Onboarding() {
   return (
     <div className="ob" data-scheme={scheme} data-phase={step === TOTAL ? reading.phase : undefined}>
       <main className="ob-screen">
+        {step === TOTAL && (
+          <div className="ob-top">
+            <button className="ob-back" onClick={() => setStep(TOTAL - 1)} aria-label="Back">
+              ←
+            </button>
+          </div>
+        )}
         {step < TOTAL && (
           <div className="ob-top">
             {step > 1 && (
@@ -92,7 +109,7 @@ export function Onboarding() {
                 onClick={next}
                 disabled={current.canContinue ? !current.canContinue(a) : false}
               >
-                {step === 1 ? "Let's go" : "Continue"}
+                {seenPlan ? "Back to my plan" : step === 1 ? "Let's go" : "Continue"}
               </button>
               {current.skippable && (
                 <button className="link-btn ob-skip" onClick={skip}>
@@ -108,7 +125,7 @@ export function Onboarding() {
             saving={save.isPending}
             error={save.isError}
             onConfirm={() => save.mutate()}
-            onAdjust={() => setStep(2)}
+            onEdit={editStep}
           />
         )}
       </main>

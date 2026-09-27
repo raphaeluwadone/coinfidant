@@ -6,6 +6,7 @@ import {
   type ISODate,
   PHASES,
   REVEAL_TAGLINE,
+  TONES,
 } from "@coinfidant/engine";
 import { useMemo } from "react";
 import { type Answers, previewInput } from "./state";
@@ -16,7 +17,8 @@ type Props = {
   saving: boolean;
   error: boolean;
   onConfirm: () => void;
-  onAdjust: () => void;
+  /** Jumps to an onboarding step; its Continue then comes straight back here. */
+  onEdit: (step: number) => void;
 };
 
 export function usePlanPreview(a: Answers, today: ISODate) {
@@ -27,7 +29,68 @@ export function usePlanPreview(a: Answers, today: ISODate) {
   }, [a, today]);
 }
 
-export function Reveal({ a, today, saving, error, onConfirm, onAdjust }: Props) {
+const count = (n: number, one: string, many = `${one}s`) => (n ? `${n} ${n === 1 ? one : many}` : "None");
+const sum = (xs: number[]) => xs.reduce((t, x) => t + x, 0);
+
+function answerRows(a: Answers) {
+  const tone = TONES.find((t) => t.key === a.personality)!;
+  const payday = a.expectedPayday === 31 ? "31st / 1st" : `the ${a.expectedPayday}${ordinal(a.expectedPayday)}`;
+  return [
+    { step: 1, label: "Sass", value: `${tone.emoji} ${tone.label}` },
+    { step: 2, label: "Salary", value: `${formatMoney(a.salary)}, lands ${payday}` },
+    {
+      step: 3,
+      label: "Monthly bills",
+      value: a.bills.length
+        ? `${count(a.bills.length, "bill")} · ${formatMoney(sum(a.bills.map((b) => b.amount)))}`
+        : "None",
+    },
+    { step: 4, label: "Big bills", value: count(a.sinkingFunds.length, "fund") },
+    {
+      step: 5,
+      label: "Debts",
+      value: a.debts.length
+        ? `${count(a.debts.length, "debt")} · ${formatMoney(sum(a.debts.map((d) => d.amountLeft)))} left`
+        : "None",
+    },
+    {
+      step: 6,
+      label: "Goals and people",
+      value:
+        a.goals.length || a.commitments.length
+          ? [
+              a.goals.length && count(a.goals.length, "goal"),
+              a.commitments.length && count(a.commitments.length, "person", "people"),
+            ]
+              .filter(Boolean)
+              .join(", ")
+          : "None",
+    },
+    {
+      step: 7,
+      label: "Everyday spending",
+      value: a.discovery ? "Learning it this cycle 🔍" : `${formatMoney(a.everydayEstimate)}/month`,
+    },
+    {
+      step: 8,
+      label: "Leaks and danger zones",
+      value:
+        a.leakCategories.length + a.overspendTimes.length
+          ? count(a.leakCategories.length + a.overspendTimes.length, "pick")
+          : "None",
+    },
+    {
+      step: 9,
+      label: "Check-ins",
+      value: { evening: "Evening check-in", drift: "Drift alerts", app: "App only" }[a.checkinMethod],
+    },
+  ];
+}
+
+const ordinal = (n: number) =>
+  n % 10 === 1 && n !== 11 ? "st" : n % 10 === 2 && n !== 12 ? "nd" : n % 10 === 3 && n !== 13 ? "rd" : "th";
+
+export function Reveal({ a, today, saving, error, onConfirm, onEdit }: Props) {
   const { open, reading } = usePlanPreview(a, today);
   const phase = PHASES.find((p) => p.key === reading.phase)!;
   const next = PHASES.find((p) => p.key === reading.next);
@@ -105,6 +168,23 @@ export function Reveal({ a, today, saving, error, onConfirm, onAdjust }: Props) 
         </>
       )}
 
+      <div className="ob-reveal__card">
+        <div className="ob-reveal__label">YOUR ANSWERS</div>
+        <ul className="ob-answers">
+          {answerRows(a).map((row) => (
+            <li key={row.step}>
+              <button type="button" className="ob-answers__row" onClick={() => onEdit(row.step)}>
+                <span className="ob-answers__label">{row.label}</span>
+                <span className="ob-answers__value">{row.value}</span>
+                <span className="ob-answers__edit" aria-hidden="true">
+                  Edit ›
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+
       <div className="ob-reveal__foot">
         {error && (
           <p className="ob-reveal__error" role="alert">
@@ -114,7 +194,7 @@ export function Reveal({ a, today, saving, error, onConfirm, onAdjust }: Props) 
         <button className="btn ob-reveal__cta" onClick={onConfirm} disabled={saving || overcommitted}>
           Looks good, let's go
         </button>
-        <button className="link-btn ob-reveal__adjust" onClick={onAdjust}>
+        <button className="link-btn ob-reveal__adjust" onClick={() => onEdit(2)}>
           Adjust the plan
         </button>
         <div className="ob-reveal__tagline">{REVEAL_TAGLINE}</div>
