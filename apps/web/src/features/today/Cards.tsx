@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Sticker } from "@/components/ui/sticker";
+import { monthLabel } from "@/lib/dates";
 import type { TodayData, TxnRow } from "@/lib/today";
 import { cn } from "@/lib/utils";
 import { fill, TODAY_COPY } from "./copy";
@@ -45,9 +46,6 @@ const SHORT: Record<Phase, string> = {
   build: "Grow the future",
 };
 
-const monthName = (iso: string) =>
-  new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-GB", { timeZone: "UTC", month: "short" });
-
 /** Stabilise → Attack → Build, with where you are and roughly when the next one unlocks. */
 export function GlowUp({ phase, tone }: { phase: NonNullable<TodayData["phase"]>; tone: Tone }) {
   const at = PHASES.findIndex((p) => p.key === phase.phase);
@@ -55,7 +53,7 @@ export function GlowUp({ phase, tone }: { phase: NonNullable<TodayData["phase"]>
     phase.phase === "build"
       ? TODAY_COPY.glowUp.build[tone]
       : phase.unlocksAround
-        ? fill(TODAY_COPY.glowUp[phase.phase][tone], { month: monthName(phase.unlocksAround) })
+        ? fill(TODAY_COPY.glowUp[phase.phase][tone], { month: monthLabel(phase.unlocksAround, "short") })
         : TODAY_COPY.glowUp.unknown[tone];
   return (
     <Panel title="Your glow-up" aside={aside}>

@@ -10,6 +10,7 @@ import {
 } from "@coinfidant/engine";
 import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
+import { monthLabel } from "@/lib/dates";
 import { type Answers, previewInput } from "./state";
 
 type Props = {
@@ -106,9 +107,7 @@ export function Reveal({ a, today, saving, error, onConfirm, onEdit }: Props) {
     a.goals.length || a.commitments.length || !a.debts.length ? "Goals" : null,
   ].filter(Boolean) as string[];
 
-  const unlock = reading.unlocksAround
-    ? new Date(`${reading.unlocksAround}T00:00:00Z`).toLocaleDateString("en-GB", { timeZone: "UTC", month: "long" })
-    : null;
+  const unlock = reading.unlocksAround ? monthLabel(reading.unlocksAround, "long") : null;
 
   return (
     <div className="ob-reveal">
