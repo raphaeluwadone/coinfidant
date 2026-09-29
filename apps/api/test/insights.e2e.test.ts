@@ -65,7 +65,7 @@ describe("phases", () => {
     expect((await api.post("/api/phase/celebrated")).status).toBe(204);
     expect((await api.get("/api/today")).body.phase.celebrate).toBeNull();
 
-    await api.post("/api/debts", loan(500_000, 50_000, "New loan"));
+    await api.post("/api/debts", loan(500_000, 370_000, "New loan"));
     expect((await api.get("/api/today")).body.phase).toMatchObject({ phase: "stabilise", celebrate: null });
   });
 });

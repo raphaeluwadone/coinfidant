@@ -40,9 +40,7 @@ export function detectPhase(
   const debts = active(input.debts);
   if (!debts.length) return { phase: "build", next: null, unlocksAround: null };
 
-  const squeezed =
-    open.events.some((e) => e.type === "overcommitted" || e.type === "tight") ||
-    open.plan.debts.some((d) => d.fromFlexible > 0);
+  const squeezed = open.events.some((e) => e.type === "overcommitted" || e.type === "tight");
 
   const due = (d: Debt) => open.plan.debts.find((x) => x.id === d.id)?.due ?? 0;
   const cyclesToClear = debts.filter((d) => due(d) > 0).map((d) => Math.ceil(d.amountLeft / due(d)));

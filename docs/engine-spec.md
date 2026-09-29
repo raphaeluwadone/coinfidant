@@ -123,8 +123,9 @@ Only transactions dated inside the open cycle count. Fixed bills are never trans
   `leftoverDefault` is `debts`, otherwise to savings. With no active debts it always goes to savings.
 - **R22 Attack order.** Active debts (amount left above 0), interest-bearing first; among those the highest APR
   first, with an unknown APR ranking below any known one; then the smallest balance (snowball), then by id.
-- **R23 Phase.** No active debts is **Build**. Active debts plus a squeezed plan is **Stabilise**: `overcommitted`,
-  `tight`, or any repayment taking money from flexible (`fromFlexible > 0`). Anything else is **Attack**. The rough
+- **R23 Phase.** No active debts is **Build**. Active debts plus a squeezed plan is **Stabilise**: `overcommitted`
+  (the plan doesn't fit the salary) or `tight` (flexible under 10% of salary). Anything else is **Attack**, even when
+  repayments take some money from flexible (`fromFlexible > 0`). The rough
   unlock month is `cycle.start` plus the cycles until the first debt clears (Stabilise) or until all debts clear at the
   current total repayment (Attack). No estimate when nothing is being repaid.
 

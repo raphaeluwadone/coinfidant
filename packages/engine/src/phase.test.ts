@@ -94,11 +94,17 @@ describe("R23 phase", () => {
     expect(r).toEqual({ phase: "attack", next: "build", unlocksAround: addMonths("2026-06-01", 6) });
   });
 
-  it("repayments spilling into spending money is Stabilise", () => {
-    // 50,000 due: 20,000 from savings, 30,000 from flexible.
+  it("repayments spilling into spending money is still Attack while enough is left to live on", () => {
+    // 60,000 due: 20,000 from savings, 40,000 from flexible, which still leaves 260,000.
     const r = read(base({ debts: [debt("loan", 150_000, 50_000), debt("app", 40_000, 10_000)] }));
+    expect(r).toEqual({ phase: "attack", next: "build", unlocksAround: addMonths("2026-06-01", 4) });
+  });
+
+  it("less than 10% of salary left to live on is Stabilise, unlocking when the first debt clears", () => {
+    // 300,000 due leaves 20,000 flexible, under the 40,000 line.
+    const r = read(base({ debts: [debt("loan", 900_000, 290_000), debt("app", 20_000, 10_000)] }));
     expect(r.phase).toBe("stabilise");
-    expect(r.unlocksAround).toBe(addMonths("2026-06-01", 3));
+    expect(r.unlocksAround).toBe(addMonths("2026-06-01", 2));
   });
 
   it("an overcommitted plan is Stabilise even with a small debt", () => {
