@@ -10,6 +10,7 @@ import type {
 } from "@coinfidant/engine";
 import { queryOptions } from "@tanstack/react-query";
 import { api } from "./api";
+import { applyPhasePreview } from "./phasePreview";
 import type { Category, Prefs } from "./budget";
 
 export type TxnRow = {
@@ -123,7 +124,7 @@ export const todayQuery = queryOptions({
   queryKey: ["today"],
   queryFn: () => {
     const recent = recentInsights();
-    return api<TodayData>(recent.length ? `/today?recent=${recent.join(",")}` : "/today");
+    return api<TodayData>(recent.length ? `/today?recent=${recent.join(",")}` : "/today").then(applyPhasePreview);
   },
   refetchOnWindowFocus: true,
 });

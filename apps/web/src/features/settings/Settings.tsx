@@ -1,6 +1,7 @@
-import { sweepPreview, TONES, type Tone } from "@coinfidant/engine";
+import { type Phase, PHASES, sweepPreview, TONES, type Tone } from "@coinfidant/engine";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
 import { BackButton } from "@/components/BackButton";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -9,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { logout, meQuery } from "@/lib/auth";
 import { type BudgetData, budgetQuery, savePreferences, saveSettings } from "@/lib/budget";
+import { readPhasePreview, writePhasePreview } from "@/lib/phasePreview";
 import { disablePush } from "@/lib/push";
 import { todayQuery } from "@/lib/today";
 import { cn } from "@/lib/utils";
@@ -142,6 +144,8 @@ export function Settings() {
         {me.checkinMethod !== "app" && <Notifications />}
       </Section>
 
+      {import.meta.env.DEV && <PhasePreview onChange={() => qc.invalidateQueries({ queryKey: todayQuery.queryKey })} />}
+
       <YourData />
 
       <section className="grid gap-2.5">
@@ -193,5 +197,34 @@ function Preview({ tone, line, selected }: { tone: Tone; line: string; selected:
       </div>
       <div className={cn("text-sm font-semibold text-soft", selected && "font-bold text-foreground")}>{line}</div>
     </Card>
+  );
+}
+
+function PhasePreview({ onChange }: { onChange: () => void }) {
+  const [phase, setPhase] = useState<Phase | "auto">(() => readPhasePreview() ?? "auto");
+  return (
+    <Section title="Phase skin (dev only)" hint="Preview Today in any phase. Your real phase comes back on Auto.">
+      <ToggleGroup
+        type="single"
+        value={phase}
+        onValueChange={(v) => {
+          if (!v) return;
+          setPhase(v as Phase | "auto");
+          writePhasePreview(v === "auto" ? null : (v as Phase));
+          onChange();
+        }}
+        aria-label="Phase skin"
+        className="p-1"
+      >
+        <ToggleGroupItem value="auto" className="flex-1 py-2.5 text-[13px]">
+          Auto
+        </ToggleGroupItem>
+        {PHASES.map((p) => (
+          <ToggleGroupItem key={p.key} value={p.key} className="flex-1 py-2.5 text-[13px]">
+            {p.emoji} {p.label}
+          </ToggleGroupItem>
+        ))}
+      </ToggleGroup>
+    </Section>
   );
 }
